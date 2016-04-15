@@ -94,13 +94,13 @@ function Base.getindex(tbl::Table, sym::Symbol)
         vp = vector(tio, o)
         [eT(tio.io, tio.pos + indirect(tio, vp + i * sizeof(Int32))) for i in 1:vl]
     elseif T <: AbstractString
-        o = read(seek(tio, o), Int32)
+        o += read(seek(tio, o), Int32)
         strlen = read(seek(tio, o), Int32)
         T(readbytes(seek(tio, o + sizeof(Int32)), strlen))
     elseif T <: Table
         T(tio.io, tio.pos + indirect(tio, o))
     else
-        error("Unknown constructor for type $T")
+        error("No extractor for type  $T")
     end
 end
 
