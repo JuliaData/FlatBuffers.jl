@@ -64,6 +64,30 @@ vector(tio::TableIO, o) = o + read(seek(tio, o), Int32)
 indirect(tio::TableIO, o) = o + read(seek(tio, o), Int32)
 
 """
+    offsets(tbl)
+
+Return the offsets and data types of the members that are present in `tbl`
+
+Args:
+
+- `tbl`: a flatbuffers [`Table`]({ref})
+
+Returns:
+   a `Dict{Symbol, Tuple{Int32, DataType}}` of the values actually stored in `tbl`
+"""
+function offsets(tbl::Table)
+    tio = tbl.io
+    res = Dict{Symbol, Tuple{Int32, DataType}}()
+    for (k, v) in tbl.memb
+        o = offset(tio, v[1])
+        if o != 0
+            res[k] = (o, v[2])
+        end
+    end
+    res
+end
+
+"""
      tbl[sym]
 
 Extract a member from a [`Table`]({ref})
