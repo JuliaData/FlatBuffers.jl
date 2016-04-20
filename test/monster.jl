@@ -7,6 +7,7 @@ immutable Vec3
     y::Float32
     z::Float32
 end
+
 Vec3() = Vec3(0, 0, 0)
 
 for nm in [:Weapon, :Monster]
@@ -35,7 +36,7 @@ const Monster_members = FlatBuffers.Membrs(
      :name => (10, UTF8String, ""),
      :friendly => (12, Bool, false),
      :inventory => (14, Vector{UInt8}, UInt8[]),
-     :color => (16, UInt8, Blue),
+     :color => (16, Color, Blue),
      :weapons => (18, Vector{Weapon}, Weapon[]),
      :equipped => (20, Equipment, nothing)
   )

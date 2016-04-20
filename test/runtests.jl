@@ -6,8 +6,7 @@ include("monster.jl")
 data_path = joinpath(dirname(@__FILE__), "monsterdata.bin")
 if isreadable(data_path)
     println("testing ", data_path)
-    buf = IOBuffer(Mmap.mmap(data_path))
-    mm = Monster(buf, read(buf, Int32))
+    mm = FlatBuffers.getAsRoot(IOBuffer(Mmap.mmap(data_path)), Monster)
     @test mm[:hp] == 300
     @test mm[:mana] == 150
     @test mm[:friendly] == false
