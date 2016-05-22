@@ -27,7 +27,7 @@ are declared.  The three elements of the Tuple are the vtable offset (`Int16`), 
 """
 typealias Membrs Dict{Symbol, Tuple{Int16, Union{DataType,Union}, Any}}
 
-""""
+"""
     TableIO
 
 The IO object containing the flatbuffer and positional information specific to the table.
