@@ -13,6 +13,10 @@ if VERSION < v"0.5.0-dev+977"
     foreach(f, itrs...) = (for z in zip(itrs...); f(z...); end; nothing)
 end
 
+if VERSION < v"0.5.0-dev+4631"
+    unsafe_wrap{A<:Array}(::Type{A}, ptr, len) = pointer_to_array(ptr, len)
+end
+
 # utils
 immutable UndefinedType end
 const Undefined = UndefinedType()
@@ -144,8 +148,8 @@ function getvalue(t, o, ::Type{Vector{UInt8}})
     return t.bytes[o + 1:o + len] #TODO: maybe not make copy here?
 end
 
-getarray{T<:Scalar}(t, vp, len, ::Type{T}) = pointer_to_array(convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
-getarray{T<:Enum}(t, vp, len, ::Type{T}) = convert(Vector{T}, pointer_to_array(convert(Ptr{enumtype(T)}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len))
+getarray{T<:Scalar}(t, vp, len, ::Type{T}) = unsafe_wrap(Array, convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
+getarray{T<:Enum}(t, vp, len, ::Type{T}) = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len))
 function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
     A = Vector{T}(len)
     for i = 1:len
@@ -156,7 +160,7 @@ function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
 end
 function getarray{T}(t, vp, len, ::Type{T})
     if isstruct(T)
-        return pointer_to_array(convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
+        return unsafe_wrap(Array, convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
     else
         A = Vector{T}(len)
         for i = 1:len
