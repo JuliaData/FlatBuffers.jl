@@ -1,5 +1,9 @@
 using FlatBuffers
 
+if !isdefined(Core, :String)
+    typealias String UTF8String
+end
+
 macro union(T, TT)
     TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
     return quote

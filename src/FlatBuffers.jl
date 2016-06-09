@@ -38,7 +38,7 @@ isbitstype(T) = nfields(T) == 0
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
 default{T<:Scalar}(::Type{T}) = zero(T)
-default(::Type{String}) = ""
+default{T<:AbstractString}(::Type{T}) = ""
 default{T<:Enum}(::Type{T}) = enumtype(T)(T(0))
 default{T}(::Type{Vector{T}}) = T[]
 # fallback that recursively builds a default; for structs/tables
@@ -180,7 +180,7 @@ end
 # fallback which recursively calls read
 function getvalue{T}(t, o, ::Type{T})
     if isstruct(T)
-        if any(map(x->x<:Enum, T.types))
+        if any(x-> x <: Enum, T.types)
             args = []
             o = t.pos + o + 1
             for typ in T.types
