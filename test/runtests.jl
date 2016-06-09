@@ -1,6 +1,11 @@
 using FlatBuffers
 using Base.Test
 
+# Compat
+if !isdefined(Core, :String)
+    typealias String UTF8String
+end
+
 include(joinpath(Pkg.dir("FlatBuffers"), "test/internals.jl"))
 CheckByteLayout()
 CheckManualBuild()
