@@ -1,4 +1,8 @@
 module Example
+# Compat
+if !isdefined(Core, :String)
+    typealias String UTF8String
+end
 
 include(joinpath(Pkg.dir("FlatBuffers"), "src/header.jl"))
 

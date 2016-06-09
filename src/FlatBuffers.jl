@@ -176,7 +176,7 @@ end
 # fallback which recursively calls read
 function getvalue{T}(t, o, ::Type{T})
     if isstruct(T)
-        if any(map(x->x<:Enum, T.types))
+        if any(x -> x <: Enum, T.types)
             args = []
             o = t.pos + o + 1
             for typ in T.types
