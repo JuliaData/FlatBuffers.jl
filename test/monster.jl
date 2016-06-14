@@ -1,13 +1,14 @@
 module Example
 
-include(joinpath(Pkg.dir("FlatBuffers"), "src/header.jl"))
+using FlatBuffers
 
-@enum(Color, Red = 0, Green = 1, Blue = 3)
+@enum(Color, Red = 1, Green = 2, Blue = 8)
+@default Color Red
 
-immutable Test
+@struct immutable Test
     a::Int16
     b::UInt8
-    _::UInt8 # padding
+    # _1::UInt8 # padding
 end
 
 type TestSimpleTableWithEnum
@@ -16,16 +17,16 @@ end
 
 @default TestSimpleTableWithEnum color=Green
 
-immutable Vec3
+@struct immutable Vec3
     x::Float32
     y::Float32
     z::Float32
-    _::UInt32 # padding
+    # _::UInt32 # padding
     test1::Float64
     test2::Color
-    __::UInt8 # padding
+    # __::UInt8 # padding
     test3::Test
-    ___::UInt16 # padding
+    # ___::UInt16 # padding
 end
 
 @align Vec3 16

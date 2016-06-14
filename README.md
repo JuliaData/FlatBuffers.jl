@@ -34,7 +34,7 @@ and do a straightforward Julia translation like:
 ```julia
 module Example
 
-include(joinpath(Pkg.dir("FlatBuffers"), "src/header.jl"))
+using FlatBuffers
 
 type SimpleType
     x::Int32
@@ -46,7 +46,7 @@ end
 ```
 
 A couple of things to point out:
-* An `include` call was included near the top of the Julia module to bring in the `header.jl` file; this is a utility file that defines the necessary FlatBuffers.jl machinery for making the schema definitions easier
+* `using FlatBuffers` was included near the top to bring in the FlatBuffers module; this defines the necessary FlatBuffers.jl machinery for making the schema definitions easier
 * `int` translates to a Julia `Int32`, see more info on flatbuffer types [here](https://google.github.io/flatbuffers/md__schemas.html)
 * A default value for the `x` field in `SimpleType` was declared after the type with the `@default` macro
 * No `root_type` definition is necessary in Julia; basically any type defined with `type` (i.e. not abstract or immutable) can be a valid root table type in Julia.
@@ -58,10 +58,8 @@ using FlatBuffers, Example # the schema module we defined above
 
 val = Example.SimpleType(2) # create an instance of our type
 
-flatbuffer = FlatBuffers.Builder(Example.SimpleType) # start a flatbuffer shell for our SimpleType
-FlatBuffers.build!(flatbuffer, val) # serialize the flatbuffer using `val`
-table = FlatBuffers.Table(flatbuffer) # the `Table` type is for reading, we can read a flatbuffer that's been built
-val2 = FlatBuffers.read(table) # now we can deserialize the value from our flatbuffer, `val2` == `val`
+flatbuffer = FlatBuffers.build!(val) # start and build a flatbuffer for our SimpleType
+val2 = FlatBuffers.read(flatbuffer) # now we can deserialize the value from our flatbuffer, `val2` == `val`
 ```
 
 For more involved examples, see the test suite [here](https://github.com/dmbates/FlatBuffers.jl/tree/master/test).
@@ -79,3 +77,4 @@ List of types/methods:
 * `@align T size_in_bytes`: convenience macro for forcing a flatbuffer alignment on the Julia type `T` to `size_in_bytes`
 * `@default T field1=val1 field2=val2 ...`: convenience macro for defining default field values for Julia type `T`
 * `@union T Union{T1,T2,...}`: convenience macro for defining a flatbuffer union type `T`
+* `@struct immutable T fields... end`: convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
