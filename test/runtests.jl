@@ -19,18 +19,16 @@ checkFuzz(100, 100, true)
 
 include(joinpath(Pkg.dir("FlatBuffers"), "test/monster.jl"))
 
-vec3 = Example.Vec3(1.0, 2.0, 3.0, 0, 3.0, Example.Color(3), 0, Example.Test(5, 6, 0), 0)
-test4 = Example.Test[Example.Test(10, 20, 0), Example.Test(30, 40, 0)]
+vec3 = Example.Vec3(1.0, 2.0, 3.0, 3.0, Example.Color(1), Example.Test(5, 6))
+test4 = Example.Test[Example.Test(10, 20), Example.Test(30, 40)]
 testArrayOfString = ["test1","test2"]
 
 mon = Example.Monster(vec3, 150, 80, "MyMonster", false, collect(0x00:0x04),
         Example.Blue, test4, testArrayOfString, Example.Monster[],
         UInt8[], Example.Stat("",0,0), false, 0, 0, 0, 0, 0, 0, 0, 0,
         Bool[], 0, 0, 0)
-b = FlatBuffers.Builder(Example.Monster)
-FlatBuffers.build!(b, mon)
-t = FlatBuffers.Table(b)
-monst = FlatBuffers.read(t)
+b = FlatBuffers.build!(mon)
+monst = FlatBuffers.read(b)
 
 @test mon.pos == monst.pos
 
@@ -146,7 +144,6 @@ inst7_2 = FlatBuffers.read(t)
 #     x::TestUnionI
 # }
 
-include(joinpath(Pkg.dir("FlatBuffers"), "src/header.jl"))
 @union TestUnionU Union{Void,TestInt8T,TestInt8A}
 
 type TestUnionT
@@ -173,3 +170,100 @@ t = FlatBuffers.Table(b)
 inst9_2 = FlatBuffers.read(t)
 
 @test inst9.x_type == inst9_2.x_type && inst9.x.x == inst9_2.x.x
+
+# test @struct macro
+@struct immutable A
+    a::Int32
+end
+@test sizeof(A) == 4
+@test fieldnames(A) == [:a]
+@test A(1) == A(1)
+
+@struct immutable B
+    a::Int8
+    b::Int32
+end
+@test sizeof(B) == 8
+@test fieldnames(B) == [:a, :_pad_a_B_0, :_pad_a_B_1, :b]
+@test B(1,2) == B(1,2)
+
+@struct immutable C
+    a::Int16
+    b::Int32
+    c::Int16
+end
+@test sizeof(C) == 12
+@test fieldnames(C) == [:a, :_pad_a_C_0, :b, :c, :_pad_c_C_1]
+@test C(1,2,3) == C(1,2,3)
+
+@struct immutable D
+    a::Int8
+    b::Int64
+end
+@test sizeof(D) == 16
+@test fieldnames(D) == [:a, :_pad_a_D_0, :_pad_a_D_1, :_pad_a_D_2, :b]
+@test D(1,2) == D(1,2)
+
+@struct immutable E
+    a::Int64
+    b::Int32
+end
+@test sizeof(E) == 16
+@test fieldnames(E) == [:a, :b, :_pad_b_E_0]
+@test E(1,2) == E(1,2)
+
+@struct immutable F
+    a::Int32
+    b::Int16
+    c::Int32
+    d::Int32
+    e::Int64
+end
+@test sizeof(F) == 24
+@test fieldnames(F) == [:a, :b, :_pad_b_F_0, :c, :d, :e]
+@test F(1,2,3,4,5) == F(1,2,3,4,5)
+
+@struct immutable G
+    a::Float64
+    b::Int8
+    c::Int16
+    d::Int32
+end
+@test sizeof(G) == 24
+@test fieldnames(G) == [:a, :b, :_pad_b_G_0, :c, :_pad_c_G_1, :d]
+@test G(1,2,3,4) == G(1,2,3,4)
+
+@struct immutable H
+    a::Float32
+    b::Int8
+    c::Int16
+end
+@test sizeof(H) == 8
+@test fieldnames(H) == [:a, :b, :_pad_b_H_0, :c]
+@test H(1,2,3) == H(1,2,3)
+
+@struct immutable I
+    a::Float64
+    b::Int8
+    c::Int32
+end
+@test sizeof(I) == 16
+@test fieldnames(I) == [:a, :b, :_pad_b_I_0, :_pad_b_I_1, :c]
+@test I(1,2,3) == I(1,2,3)
+
+@struct immutable J
+    a::Int8
+    b::A
+end
+@test sizeof(J) == 8
+@test fieldnames(J) == [:a, :_pad_a_J_0, :_pad_a_J_1, :b_A_a]
+@test J(1,A(2)) == J(1,A(2))
+
+@struct immutable K
+    a::J
+    b::I
+    c::J
+end
+@test sizeof(K) == 48
+@test fieldnames(K) == [:a_J_a, :a_J__pad_a_J_0, :a_J__pad__pad_a_J_0_J_0, :a_J__pad_a_J_1, :a_J__pad__pad_a_J_1_J_1, :a_J_b_A_a, :b_I_a, :b_I_b, :b_I__pad_b_I_0, :b_I__pad__pad_b_I_0_I_0, :b_I__pad_b_I_1, :b_I__pad__pad_b_I_1_I_1, :b_I_c, :c_J_a, :c_J__pad_a_J_0, :c_J__pad__pad_a_J_0_J_0, :c_J__pad_a_J_1, :c_J__pad__pad_a_J_1_J_1, :c_J_b_A_a]
+@test K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7))) == K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7)))

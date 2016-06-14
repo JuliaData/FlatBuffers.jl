@@ -194,15 +194,15 @@ function getvalue{T}(t, o, ::Type{T})
         end
     else
         newt = Table{T}(t.bytes, t.pos + o + get(t, t.pos + o, Int32))
-        return read(newt, T)
+        return FlatBuffers.read(newt, T)
     end
 end
 
 """
-`read` parses a `T` at `t.pos` in Table `t`.
+`FlatBuffers.read` parses a `T` at `t.pos` in Table `t`.
 Will recurse as necessary for nested types (Arrays, Tables, etc.)
 """
-function Base.read{T1,T}(t::Table{T1}, ::Type{T}=T1)
+function FlatBuffers.read{T1,T}(t::Table{T1}, ::Type{T}=T1)
     args = []
     numfields = length(T.types)
     for i = 1:numfields
@@ -220,6 +220,9 @@ function Base.read{T1,T}(t::Table{T1}, ::Type{T}=T1)
     end
     return T(args...)
 end
+
+FlatBuffers.read{T}(::Type{T}, buffer::Vector{UInt8}, pos::Integer) = FlatBuffers.read(Table(T, buffer, pos))
+FlatBuffers.read{T}(b::Builder{T}) = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
 
 function Builder{T}(::Type{T}=Any, size=0)
     objectend = 0
@@ -373,5 +376,9 @@ function build!(b, arg)
     finish!(b, n)
     return b
 end
+
+build!{T}(arg::T) = build!(Builder(T), arg)
+
+include("macros.jl")
 
 end # module
