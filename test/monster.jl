@@ -1,5 +1,9 @@
 module Example
 
+if !isdefined(Core, :String)
+    typealias String UTF8String
+end
+
 using FlatBuffers
 
 @enum(Color, Red = 1, Green = 2, Blue = 8)
