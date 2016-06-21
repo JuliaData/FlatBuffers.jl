@@ -5,7 +5,7 @@ if !isdefined(Core, :String)
     typealias String UTF8String
 end
 
-include(joinpath(Pkg.dir("FlatBuffers"), "test/internals.jl"))
+include("internals.jl")
 CheckByteLayout()
 CheckManualBuild()
 CheckVtableDeduplication()
@@ -17,7 +17,7 @@ CheckFinishedBytesError()
 CheckCreateByteVector()
 checkFuzz(100, 100, true)
 
-include(joinpath(Pkg.dir("FlatBuffers"), "test/monster.jl"))
+include("monster.jl")
 
 vec3 = Example.Vec3(1.0, 2.0, 3.0, 3.0, Example.Color(1), Example.Test(5, 6))
 test4 = Example.Test[Example.Test(10, 20), Example.Test(30, 40)]
