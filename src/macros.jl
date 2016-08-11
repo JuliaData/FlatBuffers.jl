@@ -4,8 +4,8 @@ macro union(T, TT)
     TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
     return quote
         typealias $(esc(T)) $(esc(TT))
-        $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([eval(current_module(), typ)=>i-1 for (i,typ) in enumerate(TT.args[2:end])]))[TT]
-        $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([i-1=>eval(current_module(), typ) for (i,typ) in enumerate(TT.args[2:end])]))[i]
+        $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([(eval(current_module(), typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
+        $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(current_module(), typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
     end
 end
 

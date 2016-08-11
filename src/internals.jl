@@ -5,9 +5,9 @@ typealias TableOrBuilder Union{Table,Builder}
 
 const Bytes2Type = Dict{Int,DataType}(1=>UInt8,2=>UInt16,4=>UInt32,8=>UInt64)
 
-Base.get{T}(t::TableOrBuilder, pos, ::Type{T}) = read(IOBuffer(sub(t.bytes, (pos+1):length(t.bytes))), T)
-Base.get{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(sub(t, (pos+1):length(t))), T)
-Base.get{T<:Enum}(t::TableOrBuilder, pos, ::Type{T}) = T(read(IOBuffer(sub(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
+Base.get{T}(t::TableOrBuilder, pos, ::Type{T}) = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
+Base.get{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(view(t, (pos+1):length(t))), T)
+Base.get{T<:Enum}(t::TableOrBuilder, pos, ::Type{T}) = T(read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
 
 """
 `offset` provides access into the Table's vtable.
@@ -309,7 +309,7 @@ function assertnotnested(b::Builder)
 	# If you hit this, you're trying to construct a Table/Vector/String
 	# during the construction of its parent table (between the MyTableBuilder
 	# and builder.Finish()).
-	# Move the creation of these sub-objects to above the MyTableBuilder to
+	# Move the creation of these view-objects to above the MyTableBuilder to
 	# not get this assert.
 	# Ignoring this assert may appear to work in simple cases, but the reason
 	# it is here is that storing objects in-line may cause vtable offsets
@@ -373,7 +373,7 @@ function writevtable!(b::Builder)
 
 		metadata = VtableMetadataFields * sizeof(Int16)
 		vt2End = vt2Start + vt2Len
-		vt2 = sub(b.bytes, (vt2Start + metadata + 1):vt2End) #TODO: might need a +1 on the start of range here
+		vt2 = view(b.bytes, (vt2Start + metadata + 1):vt2End) #TODO: might need a +1 on the start of range here
 
 		# Compare the other vtable to the one under consideration.
 		# If they are equal, store the offset and break:
@@ -439,7 +439,7 @@ function vtableEqual(a::Vector{Int}, objectStart, b::AbstractVector{UInt8})
 	end
 
     for i = 0:(length(a)-1)
-        x = read(IOBuffer(sub(b, (i * sizeof(Int16) + 1):length(b))), Int16)
+        x = read(IOBuffer(view(b, (i * sizeof(Int16) + 1):length(b))), Int16)
 
 		# Skip vtable entries that indicate a default value.
 		x == 0 && a[i+1] == 0 && continue

@@ -6,6 +6,10 @@ if !isdefined(Core, :String)
     typealias String UTF8String
 end
 
+if !isdefined(Base, :view)
+    view = sub
+end
+
 if VERSION < v"0.5.0-dev+977"
     export foreach
 
@@ -149,8 +153,8 @@ function getvalue(t, o, ::Type{Vector{UInt8}})
     return t.bytes[o + 1:o + len] #TODO: maybe not make copy here?
 end
 
-getarray{T<:Scalar}(t, vp, len, ::Type{T}) = unsafe_wrap(Array, convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
-getarray{T<:Enum}(t, vp, len, ::Type{T}) = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len))
+getarray{T<:Scalar}(t, vp, len, ::Type{T}) = unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
+getarray{T<:Enum}(t, vp, len, ::Type{T}) = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len))
 function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
     A = Vector{T}(len)
     for i = 1:len
@@ -161,7 +165,7 @@ function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
 end
 function getarray{T}(t, vp, len, ::Type{T})
     if isstruct(T)
-        return unsafe_wrap(Array, convert(Ptr{T}, pointer(sub(t.bytes, (vp + 1):length(t.bytes)))), len)
+        return unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
     else
         A = Vector{T}(len)
         for i = 1:len
@@ -185,13 +189,13 @@ function getvalue{T}(t, o, ::Type{T})
             args = []
             o = t.pos + o + 1
             for typ in T.types
-                val = unsafe_load(convert(Ptr{typ <: Enum ? enumtype(typ) : typ}, pointer(sub(t.bytes, o:length(t.bytes)))))
+                val = unsafe_load(convert(Ptr{typ <: Enum ? enumtype(typ) : typ}, pointer(view(t.bytes, o:length(t.bytes)))))
                 push!(args, val)
                 o += sizeof(typ <: Enum ? enumtype(typ) : typ)
             end
             return T(args...)
         else
-            return unsafe_load(convert(Ptr{T}, pointer(sub(t.bytes, (t.pos + o + 1):length(t.bytes)))))
+            return unsafe_load(convert(Ptr{T}, pointer(view(t.bytes, (t.pos + o + 1):length(t.bytes)))))
         end
     else
         newt = Table{T}(t.bytes, t.pos + o + get(t, t.pos + o, Int32))
