@@ -33,21 +33,21 @@ Contributions are very welcome, as are feature requests and suggestions. Please 
 
 
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://dmbates.github.io/FlatBuffers.jl/latest
+[docs-latest-url]: https://JuliaData.github.io/FlatBuffers.jl/latest
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://dmbates.github.io/FlatBuffers.jl/stable
+[docs-stable-url]: https://JuliaData.github.io/FlatBuffers.jl/stable
 
-[travis-img]: https://travis-ci.org/dmbates/FlatBuffers.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/dmbates/FlatBuffers.jl
+[travis-img]: https://travis-ci.org/JuliaData/FlatBuffers.jl.svg?branch=master
+[travis-url]: https://travis-ci.org/JuliaData/FlatBuffers.jl
 
 [appveyor-img]: https://ci.appveyor.com/api/projects/status/h227adt6ovd1u3sx/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/dmbates/documenter-jl/branch/master
+[appveyor-url]: https://ci.appveyor.com/project/JuliaData/documenter-jl/branch/master
 
-[codecov-img]: https://codecov.io/gh/dmbates/FlatBuffers.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/dmbates/FlatBuffers.jl
+[codecov-img]: https://codecov.io/gh/JuliaData/FlatBuffers.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaData/FlatBuffers.jl
 
-[issues-url]: https://github.com/dmbates/FlatBuffers.jl/issues
+[issues-url]: https://github.com/JuliaData/FlatBuffers.jl/issues
 
 [pkg-0.4-img]: http://pkg.julialang.org/badges/FlatBuffers_0.4.svg
 [pkg-0.4-url]: http://pkg.julialang.org/?pkg=FlatBuffers
