@@ -196,7 +196,7 @@ end
 function createstring(b::Builder, s::AbstractString)
 	assertnotnested(b)
 	b.nested = true
-    s = s.data
+    s = Vector{UInt8}(s)
 
 	prep!(b, sizeof(UInt32), length(s) + 1)
     place!(b, UInt8(0))
