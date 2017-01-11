@@ -22,6 +22,12 @@ if VERSION < v"0.5.0-dev+4631"
     unsafe_wrap{A<:Array}(::Type{A}, ptr, len) = pointer_to_array(ptr, len)
 end
 
+if !isdefined(Base, :xor)
+    const xor = $
+    const ⊻ = xor
+    export xor, ⊻
+end
+
 # utils
 immutable UndefinedType end
 const Undefined = UndefinedType()

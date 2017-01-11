@@ -132,7 +132,7 @@ function prep!(b::Builder, size, additionalbytes)
 	end
 	# Find the amount of alignment needed such that `size` is properly
 	# aligned after `additionalBytes`:
-    alignsize = (Int(-1) $ ((length(b.bytes) - b.head) + additionalbytes)) + 1
+    alignsize = xor(Int(-1), (length(b.bytes) - b.head) + additionalbytes) + 1
 	alignsize &= (size - 1)
 
 	# Reallocate the buffer if needed:
