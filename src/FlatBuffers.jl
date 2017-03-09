@@ -29,7 +29,7 @@ if !isdefined(Base, :xor)
 end
 
 # utils
-struct UndefinedType end
+immutable UndefinedType end
 const Undefined = UndefinedType()
 
 getfieldvalue{T}(obj::T, i) = isdefined(obj, i) ? getfield(obj, i) : Undefined
