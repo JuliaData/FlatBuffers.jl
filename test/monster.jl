@@ -1,15 +1,15 @@
 module Example
 
 if !isdefined(Core, :String)
-    typealias String UTF8String
+    const String = UTF8String
 end
 
 using FlatBuffers
 
 @enum(Color, Red = 1, Green = 2, Blue = 8)
-@default Color Red
+@DEFAULT Color Red
 
-@struct immutable Test
+@STRUCT immutable Test
     a::Int16
     b::UInt8
     # _1::UInt8 # padding
@@ -19,9 +19,9 @@ type TestSimpleTableWithEnum
     color::Color
 end
 
-@default TestSimpleTableWithEnum color=Green
+@DEFAULT TestSimpleTableWithEnum color=Green
 
-@struct immutable Vec3
+@STRUCT immutable Vec3
     x::Float32
     y::Float32
     z::Float32
@@ -33,7 +33,7 @@ end
     # ___::UInt16 # padding
 end
 
-@align Vec3 16
+@ALIGN Vec3 16
 
 type Stat
     id::String
@@ -76,6 +76,6 @@ type Monster
     testf3::Float32
 end
 
-@default Monster hp=100 mana=150 color=Blue friendly=false testf=Float32(3.14159) testf2=Float32(3)
+@DEFAULT Monster hp=100 mana=150 color=Blue friendly=false testf=Float32(3.14159) testf2=Float32(3)
 
 end # module

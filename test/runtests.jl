@@ -2,7 +2,7 @@ using FlatBuffers
 using Base.Test
 
 if !isdefined(Core, :String)
-    typealias String UTF8String
+    const String = UTF8String
 end
 
 include("internals.jl")
@@ -33,7 +33,7 @@ monst = FlatBuffers.read(b)
 @test mon.pos == monst.pos
 
 # create test types
-# types (Scalar, Enum, immutable, T, String, Vector{UInt8})
+# types (Scalar, Enum, struct, T, String, Vector{UInt8})
 type TestInt8T
     x::Int8
 end
@@ -47,7 +47,7 @@ inst1_2 = FlatBuffers.read(t)
 
 @test inst1.x === inst1_2.x
 
-immutable TestInt8I
+struct TestInt8I
     x::Int8
 end
 
@@ -132,7 +132,7 @@ inst7_2 = FlatBuffers.read(t)
 #     y::TestCircT
 # end
 #
-# immutable TestCircI
+# struct TestCircI
 #     x::Int8
 #     y::TestCircI
 # end
@@ -144,7 +144,7 @@ inst7_2 = FlatBuffers.read(t)
 #     x::TestUnionI
 # }
 
-@union TestUnionU Union{Void,TestInt8T,TestInt8A}
+@UNION TestUnionU Union{Void,TestInt8T,TestInt8A}
 
 type TestUnionT
     x_type::Int8
@@ -171,15 +171,15 @@ inst9_2 = FlatBuffers.read(t)
 
 @test inst9.x_type == inst9_2.x_type && inst9.x.x == inst9_2.x.x
 
-# test @struct macro
-@struct immutable A
+# test @STRUCT macro
+@STRUCT struct A
     a::Int32
 end
 @test sizeof(A) == 4
 @test fieldnames(A) == [:a]
 @test A(1) == A(1)
 
-@struct immutable B
+@STRUCT struct B
     a::Int8
     b::Int32
 end
@@ -187,7 +187,7 @@ end
 @test fieldnames(B) == [:a, :_pad_a_B_0, :_pad_a_B_1, :b]
 @test B(1,2) == B(1,2)
 
-@struct immutable C
+@STRUCT struct C
     a::Int16
     b::Int32
     c::Int16
@@ -196,7 +196,7 @@ end
 @test fieldnames(C) == [:a, :_pad_a_C_0, :b, :c, :_pad_c_C_1]
 @test C(1,2,3) == C(1,2,3)
 
-@struct immutable D
+@STRUCT struct D
     a::Int8
     b::Int64
 end
@@ -204,7 +204,7 @@ end
 @test fieldnames(D) == [:a, :_pad_a_D_0, :_pad_a_D_1, :_pad_a_D_2, :b]
 @test D(1,2) == D(1,2)
 
-@struct immutable E
+@STRUCT struct E
     a::Int64
     b::Int32
 end
@@ -212,7 +212,7 @@ end
 @test fieldnames(E) == [:a, :b, :_pad_b_E_0]
 @test E(1,2) == E(1,2)
 
-@struct immutable F
+@STRUCT struct F
     a::Int32
     b::Int16
     c::Int32
@@ -223,7 +223,7 @@ end
 @test fieldnames(F) == [:a, :b, :_pad_b_F_0, :c, :d, :e]
 @test F(1,2,3,4,5) == F(1,2,3,4,5)
 
-@struct immutable G
+@STRUCT struct G
     a::Float64
     b::Int8
     c::Int16
@@ -233,7 +233,7 @@ end
 @test fieldnames(G) == [:a, :b, :_pad_b_G_0, :c, :_pad_c_G_1, :d]
 @test G(1,2,3,4) == G(1,2,3,4)
 
-@struct immutable H
+@STRUCT struct H
     a::Float32
     b::Int8
     c::Int16
@@ -242,7 +242,7 @@ end
 @test fieldnames(H) == [:a, :b, :_pad_b_H_0, :c]
 @test H(1,2,3) == H(1,2,3)
 
-@struct immutable I
+@STRUCT struct I
     a::Float64
     b::Int8
     c::Int32
@@ -251,7 +251,7 @@ end
 @test fieldnames(I) == [:a, :b, :_pad_b_I_0, :_pad_b_I_1, :c]
 @test I(1,2,3) == I(1,2,3)
 
-@struct immutable J
+@STRUCT struct J
     a::Int8
     b::A
 end
@@ -259,7 +259,7 @@ end
 @test fieldnames(J) == [:a, :_pad_a_J_0, :_pad_a_J_1, :b_A_a]
 @test J(1,A(2)) == J(1,A(2))
 
-@struct immutable K
+@STRUCT struct K
     a::J
     b::I
     c::J

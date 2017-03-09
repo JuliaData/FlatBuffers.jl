@@ -3,7 +3,7 @@ module FlatBuffers
 
 # Compat
 if !isdefined(Core, :String)
-    typealias String UTF8String
+    const String = UTF8String
 end
 
 if !isdefined(Base, :view)
@@ -29,7 +29,7 @@ if !isdefined(Base, :xor)
 end
 
 # utils
-immutable UndefinedType end
+struct UndefinedType end
 const Undefined = UndefinedType()
 
 getfieldvalue{T}(obj::T, i) = isdefined(obj, i) ? getfield(obj, i) : Undefined
@@ -38,7 +38,7 @@ getfieldvalue{T}(obj::T, i) = isdefined(obj, i) ? getfield(obj, i) : Undefined
      Scalar
 A Union of the Julia types `T <: Number` that are allowed in FlatBuffers schema
 """
-typealias Scalar Union{UndefinedType, Bool,
+const Scalar = Union{UndefinedType, Bool,
                         Int8, Int16, Int32, Int64,
                         UInt8, UInt16, UInt32, UInt64,
                         Float32, Float64}

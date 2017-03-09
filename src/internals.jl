@@ -1,9 +1,9 @@
 # table.go
 const VtableMetadataFields = 2
 
-typealias TableOrBuilder Union{Table,Builder}
+const TableOrBuilder = Union{Table,Builder}
 
-const Bytes2Type = Dict{Int,DataType}(1=>UInt8,2=>UInt16,4=>UInt32,8=>UInt64)
+const Bytes2Type = Dict{Int, DataType}(1=>UInt8, 2=>UInt16, 4=>UInt32, 8=>UInt64)
 
 Base.get{T}(t::TableOrBuilder, pos, ::Type{T}) = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
 Base.get{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(view(t, (pos+1):length(t))), T)

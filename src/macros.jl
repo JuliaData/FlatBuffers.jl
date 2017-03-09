@@ -1,15 +1,15 @@
-export @union, @default, @align, @struct
+export @UNION, @DEFAULT, @ALIGN, @STRUCT
 
-macro union(T, TT)
+macro UNION(T, TT)
     TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
     return quote
-        typealias $(esc(T)) $(esc(TT))
+        const $(esc(T)) = $(esc(TT))
         $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([(eval(current_module(), typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
         $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(current_module(), typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
     end
 end
 
-macro align(T, sz)
+macro ALIGN(T, sz)
     return quote
         $(esc(:(FlatBuffers.alignment)))(::Type{$(esc(T))}) = $sz
     end
@@ -21,7 +21,7 @@ macro enumtype(T, typ)
     end
 end
 
-# recursively finds largest field of a struct
+# recursively finds largest field of a STRUCT
 fbsizeof{T<:Enum}(::Type{T}) = sizeof(enumtype(T))
 fbsizeof{T}(::Type{T}) = sizeof(T)
 
@@ -92,7 +92,7 @@ function fieldlayout(typ, exprs...)
     return fields, values
 end
 
-macro struct(expr)
+macro STRUCT(expr)
     !expr.args[1] || throw(ArgumentError("@struct is only applicable for immutable types"))
     exprs = filter(x->x.head !== :line, expr.args[3].args)
     fields, values = FlatBuffers.fieldlayout(expr.args[2], exprs...)
@@ -119,7 +119,7 @@ macro struct(expr)
     end
 end
 
-macro default(T, kwargs...)
+macro DEFAULT(T, kwargs...)
     if eval(current_module(), T) <: Enum
         return quote
             # default{T<:Enum}(::Type{T}) = enumtype(T)(T(0))
@@ -143,10 +143,9 @@ end
 
 #TODO:
 # handle default values
-# handle unions
 # handle id?
 # handle deprecated
 # nested_flatbuffer
-macro table(expr)
-
-end
+# macro table(expr)
+#
+# end
