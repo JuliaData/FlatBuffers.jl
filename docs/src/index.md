@@ -2,7 +2,7 @@
 
 #### Usage
 
-FlatBuffers.jl provides native Julia support for reading and writing binary structures following the google flatbuffer schema (see [here](https://google.github.io/flatbuffers/flatbuffers_internals.html) for a more in-depth reveiw of the binary format).
+FlatBuffers.jl provides native Julia support for reading and writing binary structures following the google flatbuffer schema (see [here](https://google.github.io/flatbuffers/flatbuffers_internals.html) for a more in-depth review of the binary format).
 
 The typical language support for flatbuffers involves utilizing the `flatc` compiler to translate a flatbuffer schema file (.fbs) into a langugage-specific set of types/classes and methods. See [here](https://google.github.io/flatbuffers/flatbuffers_guide_writing_schema.html) for the official guide on writing schemas.
 
@@ -29,7 +29,7 @@ type SimpleType
     x::Int32
 end
 
-@default SimpleType x=1
+@DEFAULT SimpleType x=1
 
 end
 ```
@@ -37,7 +37,7 @@ end
 A couple of things to point out:
 * `using FlatBuffers` was included near the top to bring in the FlatBuffers module; this defines the necessary FlatBuffers.jl machinery for making the schema definitions easier
 * `int` translates to a Julia `Int32`, see more info on flatbuffer types [here](https://google.github.io/flatbuffers/md__schemas.html)
-* A default value for the `x` field in `SimpleType` was declared after the type with the `@default` macro
+* A default value for the `x` field in `SimpleType` was declared after the type with the `@DEFAULT` macro
 * No `root_type` definition is necessary in Julia; basically any type defined with `type` (i.e. not abstract or immutable) can be a valid root table type in Julia.
 
 So let's see how we can actually use a flatbuffer in Julia:
@@ -63,7 +63,7 @@ List of types/methods:
 * `FlatBuffers.Builder{T}`: type for serializing a Julia type `T` to a flatbuffer
 * `FlatBuffers.read`: performs the actual deserializing on a `FlatBuffer.Table`
 * `FlatBuffers.build!`: performs the actual serializing on a `FlatBuffer.Builder`
-* `@align T size_in_bytes`: convenience macro for forcing a flatbuffer alignment on the Julia type `T` to `size_in_bytes`
-* `@default T field1=val1 field2=val2 ...`: convenience macro for defining default field values for Julia type `T`
-* `@union T Union{T1,T2,...}`: convenience macro for defining a flatbuffer union type `T`
-* `@struct immutable T fields... end`: convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
+* `@ALIGN T size_in_bytes`: convenience macro for forcing a flatbuffer alignment on the Julia type `T` to `size_in_bytes`
+* `@DEFAULT T field1=val1 field2=val2 ...`: convenience macro for defining default field values for Julia type `T`
+* `@UNION T Union{T1,T2,...}`: convenience macro for defining a flatbuffer union type `T`
+* `@STRUCT immutable T fields... end`: convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
