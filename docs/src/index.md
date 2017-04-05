@@ -49,6 +49,8 @@ val = Example.SimpleType(2) # create an instance of our type
 
 flatbuffer = FlatBuffers.build!(val) # start and build a flatbuffer for our SimpleType
 val2 = FlatBuffers.read(flatbuffer) # now we can deserialize the value from our flatbuffer, `val2` == `val`
+flatbytes = FlatBuffers.bytes(flatbuffer) # get the serialized bytes of the flatbuffer
+val3 = Flatbuffers.read(Example.SimpleType, flatbytes) # now we can deserialize directly from flatbytes
 ```
 
 For more involved examples, see the test suite [here](https://github.com/dmbates/FlatBuffers.jl/tree/master/test).
