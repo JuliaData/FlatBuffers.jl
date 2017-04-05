@@ -234,6 +234,8 @@ end
 
 FlatBuffers.read{T}(::Type{T}, buffer::Vector{UInt8}, pos::Integer) = FlatBuffers.read(Table(T, buffer, pos))
 FlatBuffers.read{T}(b::Builder{T}) = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
+# assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
+FlatBuffers.read{T}(::Type{T}, bytes) = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
 
 function Builder{T}(::Type{T}=Any, size=0)
     objectend = 0
