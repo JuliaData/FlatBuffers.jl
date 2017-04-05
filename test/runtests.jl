@@ -29,8 +29,10 @@ mon = Example.Monster(vec3, 150, 80, "MyMonster", false, collect(0x00:0x04),
         Bool[], 0, 0, 0)
 b = FlatBuffers.build!(mon)
 monst = FlatBuffers.read(b)
+monst2 = FlatBuffers.read(Example.Monster, FlatBuffers.bytes(b))
 
 @test mon.pos == monst.pos
+@test mon.pos == monst2.pos
 
 # create test types
 # types (Scalar, Enum, immutable, T, String, Vector{UInt8})

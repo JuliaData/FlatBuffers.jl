@@ -237,6 +237,13 @@ FlatBuffers.read{T}(b::Builder{T}) = FlatBuffers.read(Table(T, b.bytes[b.head+1:
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
 FlatBuffers.read{T}(::Type{T}, bytes) = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
 
+"""
+    flat_bytes = bytes(b)
+
+`flat_bytes` are the serialized bytes for the FlatBuffer.  This discards the Julia specific `head`.
+"""
+bytes(b::Builder) = unsafe_wrap(Array{UInt8,1}, pointer(b.bytes, b.head+1), (length(b.bytes)-b.head))
+
 function Builder{T}(::Type{T}=Any, size=0)
     objectend = 0
     vtables = zeros(Int, 0)
