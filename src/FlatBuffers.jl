@@ -99,13 +99,13 @@ function Base.show{T}(io::IO, x::Union{Builder{T},Table{T}})
     if isempty(buffer)
         print(io, " (empty flatbuffer)")
     else
-        pos = Int(typeof(x) <: Table ? x.pos : get(buffer, 0, Int32))
+        pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, Int32))
         # print vtable offset
         syms = T.name.names
         maxpad = max(length(" vtable rel. start pos: "), maximum(map(x->length(string(x)), syms)))
         stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[9:end-1]),'"',"")
         println(io, stringify(buffer, 1, 4, " root position: "))
-        vtaboff = get(buffer, pos, Int32)
+        vtaboff = readbuffer(buffer, pos, Int32)
         vtabstart = pos - vtaboff + 5
 
         println(io, stringify(buffer, 5, 6, " vtable size: "))

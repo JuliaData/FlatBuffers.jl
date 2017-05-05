@@ -6,7 +6,7 @@ const TableOrBuilder = Union{Table,Builder}
 const Bytes2Type = Dict{Int, DataType}(1=>UInt8, 2=>UInt16, 4=>UInt32, 8=>UInt64)
 
 Base.get{T}(t::TableOrBuilder, pos, ::Type{T}) = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
-Base.get{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(view(t, (pos+1):length(t))), T)
+readbuffer{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(view(t, (pos+1):length(t))), T)
 Base.get{T<:Enum}(t::TableOrBuilder, pos, ::Type{T}) = T(read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
 
 """
@@ -369,7 +369,7 @@ function writevtable!(b::Builder)
 		# Find the other vtable, which is associated with `i`:
 		vt2Offset = b.vtables[i]
 		vt2Start = length(b.bytes) - vt2Offset
-        vt2Len = get(b.bytes, vt2Start, Int16)
+        vt2Len = readbuffer(b.bytes, vt2Start, Int16)
 
 		metadata = VtableMetadataFields * sizeof(Int16)
 		vt2End = vt2Start + vt2Len
