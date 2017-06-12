@@ -5,9 +5,9 @@ const TableOrBuilder = Union{Table,Builder}
 
 const Bytes2Type = Dict{Int, DataType}(1=>UInt8, 2=>UInt16, 4=>UInt32, 8=>UInt64)
 
-Base.get{T}(t::TableOrBuilder, pos, ::Type{T}) = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
-readbuffer{T}(t::Vector{UInt8}, pos::Int, ::Type{T}) = read(IOBuffer(view(t, (pos+1):length(t))), T)
-Base.get{T<:Enum}(t::TableOrBuilder, pos, ::Type{T}) = T(read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
+Base.get(t::TableOrBuilder, pos, ::Type{T}) where {T} = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
+readbuffer(t::Vector{UInt8}, pos::Int, ::Type{T}) where {T} = read(IOBuffer(view(t, (pos+1):length(t))), T)
+Base.get(t::TableOrBuilder, pos, ::Type{T}) where {T <: Enum} = T(read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
 
 """
 `offset` provides access into the Table's vtable.
@@ -61,7 +61,7 @@ end
 points to. If the vtable value is zero, the default value `d`
 will be returned.
 """
-function getslot{T}(t::Table, slot, d::T)
+function getslot(t::Table, slot, d::T) where {T}
 	off = offset(t, slot)
 	if off == 0
 		return d
@@ -71,10 +71,10 @@ function getslot{T}(t::Table, slot, d::T)
 end
 
 # builder.go
-value{T<:Enum}(x::T) = length(T.types) == 0 ? Int(x) : getfield(x,1)
+value(x::T) where {T <: Enum} = length(T.types) == 0 ? Int(x) : getfield(x,1)
 
 Base.write(sink::Builder, o, x::Union{Bool,UInt8}) = sink.bytes[o+1] = UInt8(x)
-function Base.write{T}(sink::Builder, off, x::T)
+function Base.write(sink::Builder, off, x::T) where {T}
     off += 1
     for (i,ind) = enumerate(off:(off + sizeof(T) - 1))
 		sink.bytes[ind] = (x >> ((i-1) * 8)) % UInt8
@@ -150,7 +150,7 @@ end
 `prepend!` prepends a `T` to the Builder buffer.
 Aligns and checks for space.
 """
-function Base.prepend!{T}(b::Builder, x::T)
+function Base.prepend!(b::Builder, x::T) where {T}
 	prep!(b, sizeof(T), 0)
 	place!(b, x)
     return
@@ -159,7 +159,7 @@ end
 """
 `place!` prepends a `T` to the Builder, without checking for space.
 """
-function place!{T}(b::Builder, x::T)
+function place!(b::Builder, x::T) where {T}
 	b.head -= sizeof(T)
     write(b, b.head, x)
     return
@@ -239,7 +239,7 @@ function prependoffset!(b::Builder, off)
     return
 end
 
-function prependoffsetslot!{T}(b::Builder, o::Int, x::T, d::T)
+function prependoffsetslot!(b::Builder, o::Int, x::T, d::T) where {T}
 	if x != d
 		prependoffset!(b, x)
 		slot!(b, o)
@@ -252,7 +252,7 @@ end
 If value `x` equals default `d`, then the slot will be set to zero and no
 other data will be written.
 """
-function prependslot!{T}(b::Builder, o::Int, x::T, d::T)
+function prependslot!(b::Builder, o::Int, x::T, d::T) where {T}
 	if x != d
 		prepend!(b, x)
 		slot!(b, o)

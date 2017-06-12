@@ -4,8 +4,8 @@ macro UNION(T, TT)
     TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
     return quote
         const $(esc(T)) = $(esc(TT))
-        $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([(eval(current_module(), typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
-        $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(current_module(), typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
+        $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([(eval(@__MODULE__, typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
+        $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(@__MODULE__, typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
     end
 end
 
@@ -33,11 +33,11 @@ nextsizeof{T}(::Type{T}) = isbitstype(T) ? sizeof(T) : nextsizeof(T.types[1])
 function fieldlayout(typ, exprs...)
     fields = Expr[]
     values = []
-    largest_field = maximum(map(x->maxsizeof(eval(current_module(), x.args[2])), exprs))
+    largest_field = maximum(map(x->maxsizeof(eval(@__MODULE__, x.args[2])), exprs))
     sz = cur_sz = 0
     x = 0
     for (i,expr) in enumerate(exprs)
-        T = eval(current_module(), expr.args[2])
+        T = eval(@__MODULE__, expr.args[2])
         if !isbitstype(T)
             exprs2 = [Expr(:(::), nm, typ) for (nm,typ) in zip(fieldnames(T),T.types)]
             fields2, values2 = fieldlayout(T, exprs2...)
@@ -52,7 +52,7 @@ function fieldlayout(typ, exprs...)
             sz = cur_sz = 0
             continue
         end
-        nextsz = i == length(exprs) ? 0 : nextsizeof(eval(current_module(), exprs[i+1].args[2]))
+        nextsz = i == length(exprs) ? 0 : nextsizeof(eval(@__MODULE__, exprs[i+1].args[2]))
         if i == length(exprs) || cur_sz < nextsz || (sz + nextsz) > largest_field
             # this is the last field and we're not `sz % largest_field`
             # potential diffs = 7, 6, 5, 4, 3, 2, 1
@@ -104,9 +104,9 @@ macro STRUCT(expr)
         # adding zeros for padded arguments
         # pass big, flat, args tuple to inner constructor
     T = expr.args[2]
-    if any(x->!FlatBuffers.isbitstype(eval(current_module(), x.args[2])), exprs) ||
+    if any(x->!FlatBuffers.isbitstype(eval(@__MODULE__, x.args[2])), exprs) ||
        length(fields) > length(exprs)
-       exprs2 = map(x->FlatBuffers.isbitstype(eval(current_module(), x.args[2])) ? x.args[1] : x, exprs)
+       exprs2 = map(x->FlatBuffers.isbitstype(eval(@__MODULE__, x.args[2])) ? x.args[1] : x, exprs)
        sig = Expr(:call, T, exprs2...)
        body = Expr(:call, T, values...)
        outer = Expr(:function, sig, body)
@@ -120,7 +120,7 @@ macro STRUCT(expr)
 end
 
 macro DEFAULT(T, kwargs...)
-    if eval(current_module(), T) <: Enum
+    if eval(@__MODULE__, T) <: Enum
         return quote
             # default{T<:Enum}(::Type{T}) = enumtype(T)(T(0))
             $(esc(:(FlatBuffers.default)))(::Type{$(esc(T))}) = $(esc(:(FlatBuffers.enumtype)))($(esc(T)))($(esc(kwargs[1])))

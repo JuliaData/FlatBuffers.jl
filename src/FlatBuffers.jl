@@ -1,38 +1,11 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
+__precompile__(true)
 module FlatBuffers
 
-# Compat
-if !isdefined(Core, :String)
-    const String = UTF8String
-end
-
-if !isdefined(Base, :view)
-    view = sub
-end
-
-if VERSION < v"0.5.0-dev+977"
-    export foreach
-
-    foreach(f) = (f(); nothing)
-    foreach(f, itr) = (for x in itr; f(x); end; nothing)
-    foreach(f, itrs...) = (for z in zip(itrs...); f(z...); end; nothing)
-end
-
-if VERSION < v"0.5.0-dev+4631"
-    unsafe_wrap{A<:Array}(::Type{A}, ptr, len) = pointer_to_array(ptr, len)
-end
-
-if !isdefined(Base, :xor)
-    const xor = $
-    const ⊻ = xor
-    export xor, ⊻
-end
-
 # utils
-immutable UndefinedType end
+struct UndefinedType end
 const Undefined = UndefinedType()
 
-getfieldvalue{T}(obj::T, i) = isdefined(obj, i) ? getfield(obj, i) : Undefined
+getfieldvalue(obj::T, i) where {T} = isdefined(obj, i) ? getfield(obj, i) : Undefined
 
 """
      Scalar
@@ -48,16 +21,16 @@ isbitstype(T) = nfields(T) == 0
 
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
-default{T<:Scalar}(::Type{T}) = zero(T)
-default{T<:AbstractString}(::Type{T}) = ""
-default{T<:Enum}(::Type{T}) = enumtype(T)(T(0))
-default{T}(::Type{Vector{T}}) = T[]
+default(::Type{T}) where {T <: Scalar} = zero(T)
+default(::Type{T}) where {T <: AbstractString} = ""
+default(::Type{T}) where {T <: Enum} = enumtype(T)(T(0))
+default(::Type{Vector{T}}) where {T} = T[]
 # fallback that recursively builds a default; for structs/tables
-default{T}(::Type{T}) = isa(T, Union) ? nothing : T(map(TT->TT == T ? TT() : default(TT),T.types)...)
+default(::Type{T}) where {T} = isa(T, Union) ? nothing : T(map(TT->TT == T ? TT() : default(TT),T.types)...)
 
 function typeorder end
 
-enumtype{T<:Enum}(::Type{T}) = UInt8
+enumtype(::Type{<:Enum}) = UInt8
 
 # Types
 """
@@ -70,7 +43,7 @@ The actual values in the table follow `pos` offset and size of the vtable.
 - `bytes::Vector{UInt8}`: the flatbuffer itself
 - `pos::Int`:  the base position in `bytes` of the table
 """
-type Table{T}
+mutable struct Table{T}
     bytes::Vector{UInt8}
     pos::Int
 end
@@ -82,7 +55,7 @@ Use a Builder to construct object(s) starting from leaf nodes.
 A Builder constructs byte buffers in a last-first manner for simplicity and
 performance.
 """
-type Builder{T}
+mutable struct Builder{T}
     bytes::Vector{UInt8}
     minalign::Int
     vtable::Vector{Int}
@@ -93,7 +66,7 @@ type Builder{T}
 	finished::Bool
 end
 
-function Base.show{T}(io::IO, x::Union{Builder{T},Table{T}})
+function Base.show(io::IO, x::Union{Builder{T},Table{T}}) where {T}
     println(io, "FlatBuffers.$(typeof(x)): ")
     buffer = typeof(x) <: Table ? x.bytes : x.bytes[x.head+1:end]
     if isempty(buffer)
@@ -130,11 +103,11 @@ end
 
 include("internals.jl")
 
-function Table{T}(::Type{T}, buffer::Vector{UInt8}, pos::Integer)
+function Table(::Type{T}, buffer::Vector{UInt8}, pos::Integer) where {T}
     return Table{T}(buffer, pos)
 end
 
-Table{T}(b::Builder{T}) = Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32))
+Table(b::Builder{T}) where {T} = Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32))
 
 function untilindex(func, itr)
     for (i,x) in enumerate(itr)
@@ -144,9 +117,9 @@ function untilindex(func, itr)
 end
 
 getvalue(t, o, ::Type{Void}) = nothing
-getvalue{T<:Scalar}(t, o, ::Type{T}) = get(t, t.pos + o, T)
-getvalue{T<:Enum}(t, o, ::Type{T}) = T(get(t, t.pos + o, enumtype(T)))
-function getvalue{T<:AbstractString}(t, o, ::Type{T})
+getvalue(t, o, ::Type{T}) where {T <: Scalar} = get(t, t.pos + o, T)
+getvalue(t, o, ::Type{T}) where {T <: Enum} = T(get(t, t.pos + o, enumtype(T)))
+function getvalue(t, o, ::Type{T}) where {T <: AbstractString}
     o += get(t, t.pos + o, Int32)
     strlen = get(t, t.pos + o, Int32)
     o += t.pos + sizeof(Int32)
@@ -159,9 +132,9 @@ function getvalue(t, o, ::Type{Vector{UInt8}})
     return t.bytes[o + 1:o + len] #TODO: maybe not make copy here?
 end
 
-getarray{T<:Scalar}(t, vp, len, ::Type{T}) = unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
-getarray{T<:Enum}(t, vp, len, ::Type{T}) = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len))
-function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
+getarray(t, vp, len, ::Type{T}) where {T <: Scalar} = unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
+getarray(t, vp, len, ::Type{T}) where {T <: Enum} = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len))
+function getarray(t, vp, len, ::Type{T}) where {T <: Union{AbstractString, Vector{UInt8}}}
     A = Vector{T}(len)
     for i = 1:len
         A[i] = getvalue(t, vp - t.pos, T)
@@ -169,7 +142,7 @@ function getarray{T<:Union{AbstractString,Vector{UInt8}}}(t, vp, len, ::Type{T})
     end
     return A
 end
-function getarray{T}(t, vp, len, ::Type{T})
+function getarray(t, vp, len, ::Type{T}) where {T}
     if isstruct(T)
         return unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
     else
@@ -182,14 +155,14 @@ function getarray{T}(t, vp, len, ::Type{T})
     end
 end
 
-function getvalue{T}(t, o, ::Type{Vector{T}})
+function getvalue(t, o, ::Type{Vector{T}}) where {T}
     vl = vectorlen(t, o)
     vp = vector(t, o)
     return getarray(t, vp, vl, T)
 end
 
 # fallback which recursively calls read
-function getvalue{T}(t, o, ::Type{T})
+function getvalue(t, o, ::Type{T}) where {T}
     if isstruct(T)
         if any(x-> x <: Enum, T.types)
             args = []
@@ -213,7 +186,7 @@ end
 `FlatBuffers.read` parses a `T` at `t.pos` in Table `t`.
 Will recurse as necessary for nested types (Arrays, Tables, etc.)
 """
-function FlatBuffers.read{T1,T}(t::Table{T1}, ::Type{T}=T1)
+function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     args = []
     numfields = length(T.types)
     for i = 1:numfields
@@ -232,10 +205,10 @@ function FlatBuffers.read{T1,T}(t::Table{T1}, ::Type{T}=T1)
     return T(args...)
 end
 
-FlatBuffers.read{T}(::Type{T}, buffer::Vector{UInt8}, pos::Integer) = FlatBuffers.read(Table(T, buffer, pos))
-FlatBuffers.read{T}(b::Builder{T}) = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
+FlatBuffers.read(::Type{T}, buffer::Vector{UInt8}, pos::Integer) where {T} = FlatBuffers.read(Table(T, buffer, pos))
+FlatBuffers.read(b::Builder{T}) where {T} = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
-FlatBuffers.read{T}(::Type{T}, bytes) = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
+FlatBuffers.read(::Type{T}, bytes) where {T} = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
 
 """
     flat_bytes = bytes(b)
@@ -244,7 +217,7 @@ FlatBuffers.read{T}(::Type{T}, bytes) = FlatBuffers.read(T, bytes, read(IOBuffer
 """
 bytes(b::Builder) = unsafe_wrap(Array{UInt8,1}, pointer(b.bytes, b.head+1), (length(b.bytes)-b.head))
 
-function Builder{T}(::Type{T}=Any, size=0)
+function Builder(::Type{T}=Any, size=0) where {T}
     objectend = 0
     vtables = zeros(Int, 0)
     head = size
@@ -260,7 +233,7 @@ end
 
 # build!
 "`alignment` looks for the largest scalar member of `T` that represents a flatbuffer Struct"
-function alignment{T}(::Type{T})
+function alignment(::Type{T}) where {T}
     largest = 0
     for typ in T.types
         largest = isbitstype(typ) ? max(largest,sizeof(typ)) : alignment(typ)
@@ -280,12 +253,12 @@ function buildvector!(b, A::Vector{Void}, len)
     return endvector(b, 0)
 end
 # scalar type vector
-function buildvector!{T<:Scalar}(b, A::Vector{T}, len)
+function buildvector!(b, A::Vector{T}, len) where {T <: Scalar}
     startvector(b, sizeof(T), len, sizeof(T))
     foreach(x->prepend!(b, A[x]), len:-1:1)
     return endvector(b, len)
 end
-function buildvector!{T<:Enum}(b, A::Vector{T}, len)
+function buildvector!(b, A::Vector{T}, len) where {T <: Enum}
     startvector(b, sizeof(enumtype(T)), len, sizeof(enumtype(T)))
     foreach(x->prepend!(b, enumtype(T)(A[x])), len:-1:1)
     return endvector(b, len)
@@ -302,17 +275,17 @@ function buildvector!(b, A::Vector{Vector{UInt8}}, len)
     return putoffsetvector!(b, offsets, len)
 end
 # string vector
-function buildvector!{T<:AbstractString}(b, A::Vector{T}, len)
+function buildvector!(b, A::Vector{T}, len) where {T <: AbstractString}
     offsets = map(x->createstring(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
 # array vector
-function buildvector!{T}(b, A::Vector{Vector{T}}, len)
+function buildvector!(b, A::Vector{Vector{T}}, len) where {T}
     offsets = map(x->buildbuffer!(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
 # struct or table/object vector
-function buildvector!{T}(b, A::Vector{T}, len)
+function buildvector!(b, A::Vector{T}, len) where {T}
     if isstruct(T)
         # struct
         startvector(b, sizeof(T), len, alignment(T)) #TODO: forced elsize/alignment correct here?
@@ -333,13 +306,13 @@ down to their last leaf scalar types before returning the highest-level offset.
 function getoffset end
 
 getoffset(b, arg::Void) = 0
-getoffset{T<:Scalar}(b, arg::T) = 0
-getoffset{T<:Enum}(b, arg::T) = 0
+getoffset(b, arg::T) where {T <: Scalar} = 0
+getoffset(b, arg::T) where {T <: Enum} = 0
 getoffset(b, arg::Vector{UInt8}) = createbytevector(b, arg)
 getoffset(b, arg::AbstractString) = createstring(b, arg)
-getoffset{T}(b, arg::Vector{T}) = buildbuffer!(b, arg)
+getoffset(b, arg::Vector{T}) where {T} = buildbuffer!(b, arg)
 # structs or table/object
-getoffset{T}(b, arg::T) = isstruct(T) ? 0 : buildbuffer!(b, arg)
+getoffset(b, arg::T) where {T} = isstruct(T) ? 0 : buildbuffer!(b, arg)
 
 """
 `putslot!` is one of the final steps in building a flatbuffer.
@@ -349,15 +322,15 @@ to the actual data (Arrays, Strings, other tables)
 """
 function putslot! end
 
-putslot!{T<:Scalar}(b, i, arg::T, off) = prependslot!(b, i, arg, default(T))
-putslot!{T<:Enum}(b, i, arg::T, off) = prependslot!(b, i, enumtype(T)(arg), default(T))
+putslot!(b, i, arg::T, off) where {T <: Scalar} = prependslot!(b, i, arg, default(T))
+putslot!(b, i, arg::T, off) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default(T))
 putslot!(b, i, arg::AbstractString, off) = prependoffsetslot!(b, i, off, 0)
-putslot!{T}(b, i, arg::Vector{T}, off) = prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::Vector{T}, off) where {T} = prependoffsetslot!(b, i, off, 0)
 # structs or table/object
-putslot!{T}(b, i, arg::T, off) =
+putslot!(b, i, arg::T, off) where {T} =
     isstruct(T) ? prependstructslot!(b, i, buildbuffer!(b, arg), 0) : prependoffsetslot!(b, i, off, 0)
 
-function buildbuffer!{T1,T}(b::Builder{T1}, arg::T)
+function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
     if T <: Array
         # array of things
         n = buildvector!(b, arg, length(arg))
@@ -397,7 +370,7 @@ function build!(b, arg)
     return b
 end
 
-build!{T}(arg::T) = build!(Builder(T), arg)
+build!(arg::T) where {T} = build!(Builder(T), arg)
 
 include("macros.jl")
 
