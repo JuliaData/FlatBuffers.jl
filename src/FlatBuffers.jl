@@ -132,8 +132,8 @@ function getvalue(t, o, ::Type{Vector{UInt8}})
     return t.bytes[o + 1:o + len] #TODO: maybe not make copy here?
 end
 
-getarray(t, vp, len, ::Type{T}) where {T <: Scalar} = unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
-getarray(t, vp, len, ::Type{T}) where {T <: Enum} = convert(Vector{T}, unsafe_wrap(Array, convert(Ptr{enumtype(T)}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len))
+getarray(t, vp, len, ::Type{T}) where {T <: Scalar} = (ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
+getarray(t, vp, len, ::Type{T}) where {T <: Enum} = (ptr = convert(Ptr{enumtype(T)}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
 function getarray(t, vp, len, ::Type{T}) where {T <: Union{AbstractString, Vector{UInt8}}}
     A = Vector{T}(len)
     for i = 1:len
@@ -144,7 +144,8 @@ function getarray(t, vp, len, ::Type{T}) where {T <: Union{AbstractString, Vecto
 end
 function getarray(t, vp, len, ::Type{T}) where {T}
     if isstruct(T)
-        return unsafe_wrap(Array, convert(Ptr{T}, pointer(view(t.bytes, (vp + 1):length(t.bytes)))), len)
+        ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1))
+        return [unsafe_load(ptr, i) for i = 1:len]
     else
         A = Vector{T}(len)
         for i = 1:len

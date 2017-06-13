@@ -2,23 +2,23 @@ export @UNION, @DEFAULT, @ALIGN, @STRUCT
 
 macro UNION(T, TT)
     TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
-    return quote
-        const $(esc(T)) = $(esc(TT))
-        $(esc(:(FlatBuffers.typeorder))){TT}(::Type{$(esc(T))}, ::Type{TT}) = $(Dict{DataType,Int}([(eval(@__MODULE__, typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
-        $(esc(:(FlatBuffers.typeorder)))(::Type{$(esc(T))}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(@__MODULE__, typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
-    end
+    return esc(quote
+        const $T = $TT
+        FlatBuffers.typeorder(::Type{$T}, ::Type{TT}) where {TT} = $(Dict{DataType,Int}([(eval(__module__, typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
+        FlatBuffers.typeorder(::Type{$T}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(__module__, typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
+    end)
 end
 
 macro ALIGN(T, sz)
-    return quote
-        $(esc(:(FlatBuffers.alignment)))(::Type{$(esc(T))}) = $sz
-    end
+    return esc(quote
+        FlatBuffers.alignment(::Type{$T}) = $sz
+    end)
 end
 
 macro enumtype(T, typ)
-    return quote
-        $(esc(:(FlatBuffers.enumtype)))(::Type{$(esc(T))}) = $typ
-    end
+    return esc(quote
+        FlatBuffers.enumtype(::Type{$T}) = $typ
+    end)
 end
 
 # recursively finds largest field of a STRUCT
@@ -30,17 +30,17 @@ maxsizeof{T}(::Type{T}) = isbitstype(T) ? sizeof(T) : maximum(map(x->maxsizeof(x
 
 nextsizeof{T}(::Type{T}) = isbitstype(T) ? sizeof(T) : nextsizeof(T.types[1])
 
-function fieldlayout(typ, exprs...)
+function fieldlayout(mod, typ, exprs...)
     fields = Expr[]
     values = []
-    largest_field = maximum(map(x->maxsizeof(eval(@__MODULE__, x.args[2])), exprs))
+    largest_field = maximum(map(x->maxsizeof(eval(mod, x.args[2])), exprs))
     sz = cur_sz = 0
     x = 0
     for (i,expr) in enumerate(exprs)
-        T = eval(@__MODULE__, expr.args[2])
+        T = eval(mod, expr.args[2])
         if !isbitstype(T)
             exprs2 = [Expr(:(::), nm, typ) for (nm,typ) in zip(fieldnames(T),T.types)]
-            fields2, values2 = fieldlayout(T, exprs2...)
+            fields2, values2 = fieldlayout(mod, T, exprs2...)
             append!(fields, map(x->Expr(:(::), Symbol(string(expr.args[1],'_',T,'_',x.args[1])), x.args[2]), fields2))
             append!(values, map(x->x == 0 ? 0 : Expr(:call, :getfield, expr.args[1], QuoteNode(x)), values2))
         else
@@ -52,7 +52,7 @@ function fieldlayout(typ, exprs...)
             sz = cur_sz = 0
             continue
         end
-        nextsz = i == length(exprs) ? 0 : nextsizeof(eval(@__MODULE__, exprs[i+1].args[2]))
+        nextsz = i == length(exprs) ? 0 : nextsizeof(eval(mod, exprs[i+1].args[2]))
         if i == length(exprs) || cur_sz < nextsz || (sz + nextsz) > largest_field
             # this is the last field and we're not `sz % largest_field`
             # potential diffs = 7, 6, 5, 4, 3, 2, 1
@@ -95,7 +95,7 @@ end
 macro STRUCT(expr)
     !expr.args[1] || throw(ArgumentError("@struct is only applicable for immutable types"))
     exprs = filter(x->x.head !== :line, expr.args[3].args)
-    fields, values = FlatBuffers.fieldlayout(expr.args[2], exprs...)
+    fields, values = FlatBuffers.fieldlayout(__module__, expr.args[2], exprs...)
     expr.args[3].args = fields
     # generate convenience outer constructors if necessary
      # if there are nested structs or padding:
@@ -104,41 +104,40 @@ macro STRUCT(expr)
         # adding zeros for padded arguments
         # pass big, flat, args tuple to inner constructor
     T = expr.args[2]
-    if any(x->!FlatBuffers.isbitstype(eval(@__MODULE__, x.args[2])), exprs) ||
+    if any(x->!FlatBuffers.isbitstype(eval(__module__, x.args[2])), exprs) ||
        length(fields) > length(exprs)
-       exprs2 = map(x->FlatBuffers.isbitstype(eval(@__MODULE__, x.args[2])) ? x.args[1] : x, exprs)
+       exprs2 = map(x->FlatBuffers.isbitstype(eval(__module__, x.args[2])) ? x.args[1] : x, exprs)
        sig = Expr(:call, T, exprs2...)
        body = Expr(:call, T, values...)
        outer = Expr(:function, sig, body)
     else
         outer = :(nothing)
     end
-    return quote
-        $(esc(expr))
-        $(esc(outer))
-    end
+    return esc(quote
+        $expr
+        $outer
+    end)
 end
 
 macro DEFAULT(T, kwargs...)
-    if eval(@__MODULE__, T) <: Enum
-        return quote
-            # default{T<:Enum}(::Type{T}) = enumtype(T)(T(0))
-            $(esc(:(FlatBuffers.default)))(::Type{$(esc(T))}) = $(esc(:(FlatBuffers.enumtype)))($(esc(T)))($(esc(kwargs[1])))
-        end
-    else
-        ifblock = quote end
+    ifblock = quote end
+    if length(kwargs) > 1
         for kw in kwargs
             push!(ifblock.args, :(if sym == $(QuoteNode(kw.args[1]))
-                                      return $(kw.args[2])
-                                  end))
+                                    return $(kw.args[2])
+                                end))
         end
-        return quote
-            function $(esc(:(FlatBuffers.default)))(::Type{$(esc(T))}, TT, sym)
+    end
+    esc(quote
+        if $T <: Enum
+            FlatBuffers.default(::Type{$T}) = FlatBuffers.enumtype($T)($(kwargs[1]))
+        else
+            function FlatBuffers.default(::Type{$T}, TT, sym)
                 $ifblock
                 return FlatBuffers.default(TT)
             end
         end
-    end
+    end)
 end
 
 #TODO:

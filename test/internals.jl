@@ -670,7 +670,7 @@ function CheckCreateByteVector()
 end
 
 const InitialLCGSeed = 48271
-type LCG
+mutable struct LCG
     val::UInt32
     LCG() = new(UInt32(InitialLCGSeed))
 end

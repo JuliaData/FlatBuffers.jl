@@ -1,27 +1,23 @@
 module Example
 
-if !isdefined(Core, :String)
-    const String = UTF8String
-end
-
 using FlatBuffers
 
 @enum(Color, Red = 1, Green = 2, Blue = 8)
 @DEFAULT Color Red
 
-@STRUCT immutable Test
+@STRUCT struct Test
     a::Int16
     b::UInt8
     # _1::UInt8 # padding
 end
 
-type TestSimpleTableWithEnum
+mutable struct TestSimpleTableWithEnum
     color::Color
 end
 
 @DEFAULT TestSimpleTableWithEnum color=Green
 
-@STRUCT immutable Vec3
+@STRUCT struct Vec3
     x::Float32
     y::Float32
     z::Float32
@@ -35,7 +31,7 @@ end
 
 @ALIGN Vec3 16
 
-type Stat
+mutable struct Stat
     id::String
     val::Int64
     count::UInt16
@@ -44,7 +40,7 @@ end
 # Julia doesn't support forward referencing of types
 # @union Any_ Union{Monster, TestSimpleTableWithEnum}
 
-type Monster
+mutable struct Monster
     pos::Vec3
     mana::Int16
     hp::Int16
