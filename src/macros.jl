@@ -22,13 +22,13 @@ macro enumtype(T, typ)
 end
 
 # recursively finds largest field of a STRUCT
-fbsizeof{T<:Enum}(::Type{T}) = sizeof(enumtype(T))
-fbsizeof{T}(::Type{T}) = sizeof(T)
+fbsizeof(::Type{T}) where {T<:Enum} = sizeof(enumtype(T))
+fbsizeof(::Type{T}) where {T} = sizeof(T)
 
-maxsizeof{T<:Enum}(::Type{T}) = sizeof(enumtype(T))
-maxsizeof{T}(::Type{T}) = isbitstype(T) ? sizeof(T) : maximum(map(x->maxsizeof(x), T.types))
+maxsizeof(::Type{T}) where {T<:Enum} = sizeof(enumtype(T))
+maxsizeof(::Type{T}) where {T} = isbitstype(T) ? sizeof(T) : maximum(map(x->maxsizeof(x), T.types))
 
-nextsizeof{T}(::Type{T}) = isbitstype(T) ? sizeof(T) : nextsizeof(T.types[1])
+nextsizeof(::Type{T}) where {T} = isbitstype(T) ? sizeof(T) : nextsizeof(T.types[1])
 
 function fieldlayout(mod, typ, exprs...)
     fields = Expr[]

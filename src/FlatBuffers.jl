@@ -17,7 +17,7 @@ const Scalar = Union{UndefinedType, Bool,
                         Float32, Float64}
 
 isstruct(T) = !T.mutable && isleaftype(T)
-isbitstype(T) = nfields(T) == 0
+isbitstype(T) = fieldcount(T) == 0
 
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
