@@ -1,11 +1,19 @@
 export @UNION, @DEFAULT, @ALIGN, @STRUCT
 
+function indexof(needle, haystack)
+    for (i, v) in enumerate(haystack)
+        v == needle && return i-1
+    end
+    return -1
+end
+
 macro UNION(T, TT)
-    TT.args[1] == :Union || throw(ArgumentError("2nd argument must be a `Union{T1,T2...}` type"))
+    typeof(T) == Symbol || throw(ArgumentError("1st argument must be a symbol to represent a Union type"))
+    TT.head == :tuple || throw(ArgumentError("2nd argument must be a tuple of types like `(T1,T2,...)`"))
     return esc(quote
-        const $T = $TT
-        FlatBuffers.typeorder(::Type{$T}, ::Type{TT}) where {TT} = $(Dict{DataType,Int}([(eval(__module__, typ), i - 1) for (i, typ) in enumerate(TT.args[2:end])]))[TT]
-        FlatBuffers.typeorder(::Type{$T}, i::Integer) = $(Dict{Int,DataType}([(i - 1, eval(__module__, typ)) for (i, typ) in enumerate(TT.args[2:end])]))[i]
+        const $T = $(Expr(:curly, :Union, TT.args...))
+        FlatBuffers.typeorder(::Type{$T}, ::Type{TT}) where {TT} = FlatBuffers.indexof(TT, $TT)
+        FlatBuffers.typeorder(::Type{$T}, i::Integer) = ($TT)[i+1]
     end)
 end
 
@@ -121,7 +129,7 @@ end
 
 macro DEFAULT(T, kwargs...)
     ifblock = quote end
-    if length(kwargs) > 1
+    if length(kwargs) > 0
         for kw in kwargs
             push!(ifblock.args, :(if sym == $(QuoteNode(kw.args[1]))
                                     return $(kw.args[2])
