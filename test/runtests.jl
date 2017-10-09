@@ -142,7 +142,7 @@ inst7_2 = FlatBuffers.read(t)
 #     x::TestUnionI
 # }
 
-@UNION TestUnionU Union{Void,TestInt8T,TestInt8A}
+@UNION TestUnionU (Void,TestInt8T,TestInt8A)
 
 mutable struct TestUnionT
     x_type::Int8

@@ -1,5 +1,13 @@
 export @UNION, @DEFAULT, @ALIGN, @STRUCT
 
+if VERSION < v"0.7-DEV"
+    const __module__ = 0
+    __mod__(x) = current_module()
+    fieldcount(x) = nfields(x)
+else
+    __mod__(x) = x
+end
+
 function indexof(needle, haystack)
     for (i, v) in enumerate(haystack)
         v == needle && return i-1
@@ -100,10 +108,16 @@ function fieldlayout(mod, typ, exprs...)
     return fields, values
 end
 
+if VERSION < v"0.7"
+    linefilter = x->isa(x, Expr) && x.head !== :line
+else
+    linefilter = x->typeof(x) != LineNumberNode
+end
+
 macro STRUCT(expr)
-    !expr.args[1] || throw(ArgumentError("@struct is only applicable for immutable types"))
-    exprs = filter(x->x.head !== :line, expr.args[3].args)
-    fields, values = FlatBuffers.fieldlayout(__module__, expr.args[2], exprs...)
+    !expr.args[1] || throw(ArgumentError("@STRUCT is only applicable for immutable types"))
+    exprs = filter(linefilter, expr.args[3].args)
+    fields, values = FlatBuffers.fieldlayout(__mod__(__module__), expr.args[2], exprs...)
     expr.args[3].args = fields
     # generate convenience outer constructors if necessary
      # if there are nested structs or padding:
@@ -112,9 +126,9 @@ macro STRUCT(expr)
         # adding zeros for padded arguments
         # pass big, flat, args tuple to inner constructor
     T = expr.args[2]
-    if any(x->!FlatBuffers.isbitstype(eval(__module__, x.args[2])), exprs) ||
+    if any(x->!FlatBuffers.isbitstype(eval(__mod__(__module__), x.args[2])), exprs) ||
        length(fields) > length(exprs)
-       exprs2 = map(x->FlatBuffers.isbitstype(eval(__module__, x.args[2])) ? x.args[1] : x, exprs)
+       exprs2 = map(x->FlatBuffers.isbitstype(eval(__mod__(__module__), x.args[2])) ? x.args[1] : x, exprs)
        sig = Expr(:call, T, exprs2...)
        body = Expr(:call, T, values...)
        outer = Expr(:function, sig, body)
@@ -129,7 +143,7 @@ end
 
 macro DEFAULT(T, kwargs...)
     ifblock = quote end
-    if length(kwargs) > 0
+    if length(kwargs) > 0 && isa(kwargs[1], Expr) && length(kwargs[1].args) > 1
         for kw in kwargs
             push!(ifblock.args, :(if sym == $(QuoteNode(kw.args[1]))
                                     return $(kw.args[2])

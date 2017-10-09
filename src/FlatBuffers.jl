@@ -16,7 +16,11 @@ const Scalar = Union{UndefinedType, Bool,
                         UInt8, UInt16, UInt32, UInt64,
                         Float32, Float64}
 
-isstruct(T) = !T.mutable && isleaftype(T)
+if VERSION < v"0.7-DEV"
+    isconcrete = isleaftype
+end
+
+isstruct(T) = !T.mutable && isconcrete(T)
 isbitstype(T) = fieldcount(T) == 0
 
 default(T, TT, sym) = default(TT)
