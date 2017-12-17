@@ -1,6 +1,13 @@
 __precompile__(true)
 module FlatBuffers
 
+macro uninit(expr)
+    if !isdefined(Base, :uninitialized)
+        splice!(expr.args, 2)
+    end
+    return esc(expr)
+end
+
 # utils
 struct UndefinedType end
 const Undefined = UndefinedType()
@@ -139,7 +146,7 @@ end
 getarray(t, vp, len, ::Type{T}) where {T <: Scalar} = (ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
 getarray(t, vp, len, ::Type{T}) where {T <: Enum} = (ptr = convert(Ptr{enumtype(T)}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
 function getarray(t, vp, len, ::Type{T}) where {T <: Union{AbstractString, Vector{UInt8}}}
-    A = Vector{T}(len)
+    A = @uninit Vector{T}(uninitialized, len)
     for i = 1:len
         A[i] = getvalue(t, vp - t.pos, T)
         vp += sizeof(Int32)
@@ -151,7 +158,7 @@ function getarray(t, vp, len, ::Type{T}) where {T}
         ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1))
         return [unsafe_load(ptr, i) for i = 1:len]
     else
-        A = Vector{T}(len)
+        A = @uninit Vector{T}(uninitialized, len)
         for i = 1:len
             A[i] = getvalue(t, vp - t.pos, T)
             vp += sizeof(Int32)

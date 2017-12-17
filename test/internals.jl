@@ -1,6 +1,3 @@
-using Base.Test
-using FlatBuffers
-
 # Store specific byte patterns in these variables for the fuzzer. These
 # values are taken verbatim from the C++ function FuzzTest1.
 const overflowingInt32Val = read(IOBuffer(UInt8[0x83, 0x33, 0x33, 0x33]), Int32)
@@ -704,7 +701,7 @@ function checkFuzz(fuzzFields, fuzzObjects, verbose=true)
 	b = FlatBuffers.Builder()
 	l = LCG()
 
-    objects = Vector{Int}(fuzzObjects)
+    objects = fill(0, fuzzObjects)
 
 	# Generate fuzzObjects random objects each consisting of
 	# fuzzFields fields, each of a random type.
