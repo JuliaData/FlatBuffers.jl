@@ -190,13 +190,20 @@ function endvector(b::Builder, vectorNumElems)
     return offset(b)
 end
 
+if !isdefined(Base, :codeunits)
+	codeunits = Vector{UInt8}
+end
+if !isdefined(Base, :copyto!)
+	copyto! = copy!
+end
+
 """
 `createstring` writes a null-terminated string as a vector.
 """
 function createstring(b::Builder, s::AbstractString)
 	assertnotnested(b)
 	b.nested = true
-    s = Vector{UInt8}(s)
+    s = codeunits(s)
 
 	prep!(b, sizeof(UInt32), length(s) + 1)
     place!(b, UInt8(0))
@@ -204,7 +211,7 @@ function createstring(b::Builder, s::AbstractString)
 	l = length(s)
 
 	b.head -= l
-    copy!(b.bytes, b.head+1, s, 1, l)
+    copyto!(b.bytes, b.head+1, s, 1, l)
 
 	return endvector(b, length(s))
 end

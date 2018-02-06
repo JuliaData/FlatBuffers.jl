@@ -25,6 +25,8 @@ const Scalar = Union{UndefinedType, Bool,
 
 if VERSION < v"0.7-DEV"
     isconcrete = isleaftype
+else
+    isconcrete = isconcretetype
 end
 
 isstruct(T) = !T.mutable && isconcrete(T)
