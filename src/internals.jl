@@ -228,7 +228,7 @@ function createbytevector(b::Builder, v::AbstractVector{UInt8})
 	l = length(v)
 
 	b.head -= l
-    copy!(b.bytes, b.head+1, v, 1, l)
+    copyto!(b.bytes, b.head+1, v, 1, l)
 
 	return endvector(b, length(v))
 end

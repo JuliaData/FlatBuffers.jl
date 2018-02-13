@@ -4,6 +4,9 @@ using FlatBuffers
 else
     using Test
 end
+if !isdefined(Base, :Nothing)
+    const Nothing = Void
+end
 
 include("internals.jl")
 CheckByteLayout()
@@ -146,7 +149,7 @@ inst7_2 = FlatBuffers.read(t)
 #     x::TestUnionI
 # }
 
-@UNION TestUnionU (Void,TestInt8T,TestInt8A)
+@UNION TestUnionU (Nothing,TestInt8T,TestInt8A)
 
 mutable struct TestUnionT
     x_type::Int8
@@ -178,7 +181,7 @@ inst9_2 = FlatBuffers.read(t)
     a::Int32
 end
 @test sizeof(A) == 4
-@test fieldnames(A) == [:a]
+@test all(fieldnames(A) .== [:a])
 @test A(1) == A(1)
 
 @STRUCT struct B
@@ -186,7 +189,7 @@ end
     b::Int32
 end
 @test sizeof(B) == 8
-@test fieldnames(B) == [:a, :_pad_a_B_0, :_pad_a_B_1, :b]
+@test all(fieldnames(B) .== [:a, :_pad_a_B_0, :_pad_a_B_1, :b])
 @test B(1,2) == B(1,2)
 
 @STRUCT struct C
@@ -195,7 +198,7 @@ end
     c::Int16
 end
 @test sizeof(C) == 12
-@test fieldnames(C) == [:a, :_pad_a_C_0, :b, :c, :_pad_c_C_1]
+@test all(fieldnames(C) .== [:a, :_pad_a_C_0, :b, :c, :_pad_c_C_1])
 @test C(1,2,3) == C(1,2,3)
 
 @STRUCT struct D
@@ -203,7 +206,7 @@ end
     b::Int64
 end
 @test sizeof(D) == 16
-@test fieldnames(D) == [:a, :_pad_a_D_0, :_pad_a_D_1, :_pad_a_D_2, :b]
+@test all(fieldnames(D) .== [:a, :_pad_a_D_0, :_pad_a_D_1, :_pad_a_D_2, :b])
 @test D(1,2) == D(1,2)
 
 @STRUCT struct E
@@ -211,7 +214,7 @@ end
     b::Int32
 end
 @test sizeof(E) == 16
-@test fieldnames(E) == [:a, :b, :_pad_b_E_0]
+@test all(fieldnames(E) .== [:a, :b, :_pad_b_E_0])
 @test E(1,2) == E(1,2)
 
 @STRUCT struct F
@@ -222,7 +225,7 @@ end
     e::Int64
 end
 @test sizeof(F) == 24
-@test fieldnames(F) == [:a, :b, :_pad_b_F_0, :c, :d, :e]
+@test all(fieldnames(F) .== [:a, :b, :_pad_b_F_0, :c, :d, :e])
 @test F(1,2,3,4,5) == F(1,2,3,4,5)
 
 @STRUCT struct G
@@ -232,7 +235,7 @@ end
     d::Int32
 end
 @test sizeof(G) == 24
-@test fieldnames(G) == [:a, :b, :_pad_b_G_0, :c, :_pad_c_G_1, :d]
+@test all(fieldnames(G) .== [:a, :b, :_pad_b_G_0, :c, :_pad_c_G_1, :d])
 @test G(1,2,3,4) == G(1,2,3,4)
 
 @STRUCT struct H
@@ -241,7 +244,7 @@ end
     c::Int16
 end
 @test sizeof(H) == 8
-@test fieldnames(H) == [:a, :b, :_pad_b_H_0, :c]
+@test all(fieldnames(H) .== [:a, :b, :_pad_b_H_0, :c])
 @test H(1,2,3) == H(1,2,3)
 
 @STRUCT struct I
@@ -250,7 +253,7 @@ end
     c::Int32
 end
 @test sizeof(I) == 16
-@test fieldnames(I) == [:a, :b, :_pad_b_I_0, :_pad_b_I_1, :c]
+@test all(fieldnames(I) .== [:a, :b, :_pad_b_I_0, :_pad_b_I_1, :c])
 @test I(1,2,3) == I(1,2,3)
 
 @STRUCT struct J
@@ -258,7 +261,7 @@ end
     b::A
 end
 @test sizeof(J) == 8
-@test fieldnames(J) == [:a, :_pad_a_J_0, :_pad_a_J_1, :b_A_a]
+@test all(fieldnames(J) .== [:a, :_pad_a_J_0, :_pad_a_J_1, :b_A_a])
 @test J(1,A(2)) == J(1,A(2))
 
 @STRUCT struct K
@@ -267,5 +270,5 @@ end
     c::J
 end
 @test sizeof(K) == 48
-@test fieldnames(K) == [:a_J_a, :a_J__pad_a_J_0, :a_J__pad__pad_a_J_0_J_0, :a_J__pad_a_J_1, :a_J__pad__pad_a_J_1_J_1, :a_J_b_A_a, :b_I_a, :b_I_b, :b_I__pad_b_I_0, :b_I__pad__pad_b_I_0_I_0, :b_I__pad_b_I_1, :b_I__pad__pad_b_I_1_I_1, :b_I_c, :c_J_a, :c_J__pad_a_J_0, :c_J__pad__pad_a_J_0_J_0, :c_J__pad_a_J_1, :c_J__pad__pad_a_J_1_J_1, :c_J_b_A_a]
+@test all(fieldnames(K) .== [:a_J_a, :a_J__pad_a_J_0, :a_J__pad__pad_a_J_0_J_0, :a_J__pad_a_J_1, :a_J__pad__pad_a_J_1_J_1, :a_J_b_A_a, :b_I_a, :b_I_b, :b_I__pad_b_I_0, :b_I__pad__pad_b_I_0_I_0, :b_I__pad_b_I_1, :b_I__pad__pad_b_I_1_I_1, :b_I_c, :c_J_a, :c_J__pad_a_J_0, :c_J__pad__pad_a_J_0_J_0, :c_J__pad_a_J_1, :c_J__pad__pad_a_J_1_J_1, :c_J_b_A_a])
 @test K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7))) == K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7)))

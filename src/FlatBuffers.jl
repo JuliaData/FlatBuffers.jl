@@ -179,6 +179,8 @@ function getvalue(t, o, ::Type{Vector{T}}) where {T}
     return getarray(t, vp, vl, T)
 end
 
+Base.convert(::Type{T}, e::Integer) where {T <: Enum} = T(e)
+
 # fallback which recursively calls read
 function getvalue(t, o, ::Type{T}) where {T}
     if isstruct(T)
