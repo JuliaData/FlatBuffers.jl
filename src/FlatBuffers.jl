@@ -8,6 +8,10 @@ macro uninit(expr)
     return esc(expr)
 end
 
+if !isdefined(Base, :Nothing)
+    const Nothing = Void
+end
+
 # utils
 struct UndefinedType end
 const Undefined = UndefinedType()
@@ -129,7 +133,7 @@ function untilindex(func, itr)
     return 0
 end
 
-getvalue(t, o, ::Type{Void}) = nothing
+getvalue(t, o, ::Type{Nothing}) = nothing
 getvalue(t, o, ::Type{T}) where {T <: Scalar} = get(t, t.pos + o, T)
 getvalue(t, o, ::Type{T}) where {T <: Enum} = T(get(t, t.pos + o, enumtype(T)))
 function getvalue(t, o, ::Type{T}) where {T <: AbstractString}
@@ -262,7 +266,7 @@ even building its elements recursively if needed (Array of Arrays, Array of tabl
 function buildvector! end
 
 # empty vector
-function buildvector!(b, A::Vector{Void}, len)
+function buildvector!(b, A::Vector{Nothing}, len)
     startvector(b, 1, 0, 1)
     return endvector(b, 0)
 end
@@ -319,7 +323,7 @@ down to their last leaf scalar types before returning the highest-level offset.
 """
 function getoffset end
 
-getoffset(b, arg::Void) = 0
+getoffset(b, arg::Nothing) = 0
 getoffset(b, arg::T) where {T <: Scalar} = 0
 getoffset(b, arg::T) where {T <: Enum} = 0
 getoffset(b, arg::Vector{UInt8}) = createbytevector(b, arg)
