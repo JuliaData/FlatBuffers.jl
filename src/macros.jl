@@ -49,11 +49,11 @@ nextsizeof(::Type{T}) where {T} = isbitstype(T) ? sizeof(T) : nextsizeof(T.types
 function fieldlayout(mod, typ, exprs...)
     fields = Expr[]
     values = []
-    largest_field = maximum(map(x->maxsizeof(eval(mod, x.args[2])), exprs))
+    largest_field = maximum(map(x->maxsizeof(Core.eval(mod, x.args[2])), exprs))
     sz = cur_sz = 0
     x = 0
     for (i,expr) in enumerate(exprs)
-        T = eval(mod, expr.args[2])
+        T = Core.eval(mod, expr.args[2])
         if !isbitstype(T)
             exprs2 = [Expr(:(::), nm, typ) for (nm,typ) in zip(fieldnames(T),T.types)]
             fields2, values2 = fieldlayout(mod, T, exprs2...)
@@ -68,7 +68,7 @@ function fieldlayout(mod, typ, exprs...)
             sz = cur_sz = 0
             continue
         end
-        nextsz = i == length(exprs) ? 0 : nextsizeof(eval(mod, exprs[i+1].args[2]))
+        nextsz = i == length(exprs) ? 0 : nextsizeof(Core.eval(mod, exprs[i+1].args[2]))
         if i == length(exprs) || cur_sz < nextsz || (sz + nextsz) > largest_field
             # this is the last field and we're not `sz % largest_field`
             # potential diffs = 7, 6, 5, 4, 3, 2, 1
@@ -126,9 +126,9 @@ macro STRUCT(expr)
         # adding zeros for padded arguments
         # pass big, flat, args tuple to inner constructor
     T = expr.args[2]
-    if any(x->!FlatBuffers.isbitstype(eval(__mod__(__module__), x.args[2])), exprs) ||
+    if any(x->!FlatBuffers.isbitstype(Core.eval(__mod__(__module__), x.args[2])), exprs) ||
        length(fields) > length(exprs)
-       exprs2 = map(x->FlatBuffers.isbitstype(eval(__mod__(__module__), x.args[2])) ? x.args[1] : x, exprs)
+       exprs2 = map(x->FlatBuffers.isbitstype(Core.eval(__mod__(__module__), x.args[2])) ? x.args[1] : x, exprs)
        sig = Expr(:call, T, exprs2...)
        body = Expr(:call, T, values...)
        outer = Expr(:function, sig, body)
