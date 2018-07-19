@@ -25,7 +25,7 @@ module Example
 
 using FlatBuffers
 
-type SimpleType
+mutable struct SimpleType
     x::Int32
 end
 
