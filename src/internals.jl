@@ -190,13 +190,6 @@ function endvector(b::Builder, vectorNumElems)
     return offset(b)
 end
 
-if !isdefined(Base, :codeunits)
-	codeunits = Vector{UInt8}
-end
-if !isdefined(Base, :copyto!)
-	copyto! = copy!
-end
-
 """
 `createstring` writes a null-terminated string as a vector.
 """

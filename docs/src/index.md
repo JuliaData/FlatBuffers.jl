@@ -68,4 +68,4 @@ List of types/methods:
 * `@ALIGN T size_in_bytes`: convenience macro for forcing a flatbuffer alignment on the Julia type `T` to `size_in_bytes`
 * `@DEFAULT T field1=val1 field2=val2 ...`: convenience macro for defining default field values for Julia type `T`
 * `@UNION T Union{T1,T2,...}`: convenience macro for defining a flatbuffer union type `T`
-* `@STRUCT immutable T fields... end`: convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
+* `@STRUCT struct T fields... end`: convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
