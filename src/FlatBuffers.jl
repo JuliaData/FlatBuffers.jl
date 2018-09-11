@@ -1,6 +1,17 @@
 __precompile__(true)
 module FlatBuffers
 
+macro uninit(expr)
+    if !isdefined(Base, :uninitialized)
+        splice!(expr.args, 2)
+    end
+    return esc(expr)
+end
+
+if !isdefined(Base, :Nothing)
+    const Nothing = Void
+end
+
 # utils
 struct UndefinedType end
 const Undefined = UndefinedType()
@@ -22,7 +33,7 @@ else
     isconcrete = isconcretetype
 end
 
-isstruct(T) = !T.mutable && isconcrete(T)
+isstruct(T) = isconcrete(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
 
 default(T, TT, sym) = default(TT)
@@ -141,7 +152,7 @@ end
 getarray(t, vp, len, ::Type{T}) where {T <: Scalar} = (ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
 getarray(t, vp, len, ::Type{T}) where {T <: Enum} = (ptr = convert(Ptr{enumtype(T)}, pointer(t.bytes, vp + 1)); return [unsafe_load(ptr, i) for i = 1:len])
 function getarray(t, vp, len, ::Type{T}) where {T <: Union{AbstractString, Vector{UInt8}}}
-    A = Vector{T}(undef, len)
+    A = @uninit Vector{T}(uninitialized, len)
     for i = 1:len
         A[i] = getvalue(t, vp - t.pos, T)
         vp += sizeof(Int32)
@@ -153,7 +164,7 @@ function getarray(t, vp, len, ::Type{T}) where {T}
         ptr = convert(Ptr{T}, pointer(t.bytes, vp + 1))
         return [unsafe_load(ptr, i) for i = 1:len]
     else
-        A = Vector{T}(undef, len)
+        A = @uninit Vector{T}(uninitialized, len)
         for i = 1:len
             A[i] = getvalue(t, vp - t.pos, T)
             vp += sizeof(Int32)
@@ -161,6 +172,15 @@ function getarray(t, vp, len, ::Type{T}) where {T}
         return A
     end
 end
+function getunionarray(t, vp, len, types, ::Type{T}) where {T}
+    A = @uninit T(uninitialized, len)
+    for i = 1:len
+        A[i] = getvalue(t, vp - t.pos, types[i])
+        vp += sizeof(Int32)
+    end
+    return A
+end
+
 
 function getvalue(t, o, ::Type{Vector{T}}) where {T}
     vl = vectorlen(t, o)
@@ -200,15 +220,23 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     numfields = length(T.types)
     for i = 1:numfields
         TT = T.types[i]
-        # if it's a Union type, use the previous arg to figure out the true type that was serialized
-        if isa(TT, Union)
-            TT = typeorder(TT, args[end])
-        end
         o = offset(t, 4 + ((i - 1) * 2))
-        if o == 0
-            push!(args, default(T, TT, T.name.names[i]))
+        # if it's a vector of Unions, use the previous field to figure out the types of all the elements
+        if TT <: AbstractVector && isa(eltype(TT), Union)
+            types = typeorder.(eltype(TT), args[end])
+            vl = vectorlen(t, o)
+            vp = vector(t, o)
+            push!(args, getunionarray(t, vp, vl, types, TT))
         else
-            push!(args, getvalue(t, o, TT))
+            # if it's a Union type, use the previous arg to figure out the true type that was serialized
+            if isa(TT, Union)
+                TT = typeorder(TT, args[end])
+            end
+            if o == 0
+                push!(args, default(T, TT, T.name.names[i]))
+            else
+                push!(args, getvalue(t, o, TT))
+            end
         end
     end
     return T(args...)
@@ -293,6 +321,7 @@ function buildvector!(b, A::Vector{Vector{T}}, len) where {T}
     offsets = map(x->buildbuffer!(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
+
 # struct or table/object vector
 function buildvector!(b, A::Vector{T}, len) where {T}
     if isstruct(T)
@@ -363,7 +392,7 @@ function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
         # build a table type
         # check for string/array/table types
         numfields = length(T.types)
-        offsets = [getoffset(b, getfieldvalue(arg,i)) for i = 1:numfields]
+        offsets = [getoffset(b,getfieldvalue(arg, i)) for i = 1:numfields]
 
         # all nested have been written, with offsets in `offsets[]`
         startobject(b, numfields)

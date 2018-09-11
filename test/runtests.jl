@@ -176,6 +176,37 @@ inst9_2 = FlatBuffers.read(t)
 
 @test inst9.x_type == inst9_2.x_type && inst9.x.x == inst9_2.x.x
 
+mutable struct TestVecUnionT
+    xs_type::Vector{UInt8}
+    xs::Vector{TestUnionU}
+end
+
+function TestVecUnionT(xs::Vector{TestUnionU})
+    xs_type = [FlatBuffers.typeorder(TestUnionU, typeof(x)) for x in xs]
+    TestVecUnionT(xs_type, xs)
+end
+
+inst10 = TestVecUnionT(TestUnionU[inst1, inst1])
+
+b = FlatBuffers.Builder(TestVecUnionT)
+FlatBuffers.build!(b, inst10)
+
+t = FlatBuffers.Table(b)
+inst10_2 = FlatBuffers.read(t)
+
+@test inst10.xs_type == inst10_2.xs_type
+@test [x.x for x in inst10.xs] == [x.x for x in inst10_2.xs]
+
+inst11 = TestVecUnionT(TestUnionU[inst3, inst3])
+
+b = FlatBuffers.Builder(TestVecUnionT)
+FlatBuffers.build!(b, inst11)
+t = FlatBuffers.Table(b)
+inst11_2 = FlatBuffers.read(t)
+
+@test inst11.xs_type == inst11_2.xs_type
+@test [x.x for x in inst11.xs] == [x.x for x in inst11_2.xs]
+
 # test @STRUCT macro
 @STRUCT struct A
     a::Int32
