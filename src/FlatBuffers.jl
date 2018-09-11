@@ -310,7 +310,6 @@ function buildvector!(b, A::Vector{Vector{T}}, len) where {T}
     offsets = map(x->buildbuffer!(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
-
 # struct or table/object vector
 function buildvector!(b, A::Vector{T}, len) where {T}
     if isstruct(T)
@@ -381,7 +380,7 @@ function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
         # build a table type
         # check for string/array/table types
         numfields = length(T.types)
-        offsets = [getoffset(b,getfieldvalue(arg, i)) for i = 1:numfields]
+        offsets = [getoffset(b,getfieldvalue(arg,i)) for i = 1:numfields]
 
         # all nested have been written, with offsets in `offsets[]`
         startobject(b, numfields)
