@@ -161,9 +161,9 @@ function getarray(t, vp, len, ::Type{T}) where {T}
         return A
     end
 end
-function getunionarray(t, vp, len, types, ::Type{T}) where {T}
-    A = T(undef, len)
-    for i = 1:len
+function getunionarray(t, vp, types, ::Type{T}) where {T}
+    A = T(undef, length(types))
+    for i = 1:length(types)
         A[i] = getvalue(t, vp - t.pos, types[i])
         vp += sizeof(Int32)
     end
@@ -213,9 +213,8 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
             types = typeorder.(eltype(TT), args[end])
-            vl = vectorlen(t, o)
             vp = vector(t, o)
-            push!(args, getunionarray(t, vp, vl, types, TT))
+            push!(args, getunionarray(t, vp, types, TT))
         else
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
             if isa(TT, Union)
