@@ -1,12 +1,5 @@
 using FlatBuffers
-@static if VERSION < v"0.7.0-DEV.2005"
-    using Base.Test
-else
-    using Test
-end
-if !isdefined(Base, :Nothing)
-    const Nothing = Void
-end
+using Test
 
 include("internals.jl")
 CheckByteLayout()
