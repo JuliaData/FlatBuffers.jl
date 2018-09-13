@@ -672,7 +672,7 @@ mutable struct LCG
     LCG() = new(UInt32(InitialLCGSeed))
 end
 reset!(lcg::LCG) = lcg.val = UInt32(InitialLCGSeed)
-function Base.next(lcg::LCG)
+function next(lcg::LCG)
     n = UInt32((UInt64(lcg.val) * UInt64(279470273)) % UInt64(4294967291))
     lcg.val = n
     return n
