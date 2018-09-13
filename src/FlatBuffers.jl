@@ -1,4 +1,3 @@
-__precompile__(true)
 module FlatBuffers
 
 # utils
@@ -16,13 +15,7 @@ const Scalar = Union{UndefinedType, Bool,
                         UInt8, UInt16, UInt32, UInt64,
                         Float32, Float64}
 
-if VERSION < v"0.7-DEV"
-    isconcrete = isleaftype
-else
-    isconcrete = isconcretetype
-end
-
-isstruct(T) = isconcrete(T) && !T.mutable
+isstruct(T) = isconcretetype(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
 
 default(T, TT, sym) = default(TT)
