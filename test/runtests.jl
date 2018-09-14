@@ -169,17 +169,28 @@ inst9_2 = FlatBuffers.read(t)
 
 @test inst9.x_type == inst9_2.x_type && inst9.x.x == inst9_2.x.x
 
+const Nachos = String
+const Burgers = Int
+FlatBuffers.@UNION(
+    Delicious,
+    (Burgers, Nachos)
+)
+
 mutable struct TestVecUnionT
     xs_type::Vector{UInt8}
     xs::Vector{TestUnionU}
+    ys_type::Vector{UInt8}
+    ys::Vector{Delicious}
 end
 
-function TestVecUnionT(xs::Vector{TestUnionU})
+function TestVecUnionT(xs::Vector{A}, ys::Vector{B}) where {A<:TestUnionU, B<:Delicious}
     xs_type = [FlatBuffers.typeorder(TestUnionU, typeof(x)) for x in xs]
-    TestVecUnionT(xs_type, xs)
+    ys_type = [FlatBuffers.typeorder(Delicious, typeof(y)) for y in ys]
+    TestVecUnionT(xs_type, xs, ys_type, ys)
 end
 
-inst10 = TestVecUnionT(TestUnionU[inst1, inst1])
+dinner = "beef"
+inst10 = TestVecUnionT(TestUnionU[inst1, inst1, inst1], [dinner])
 
 b = FlatBuffers.Builder(TestVecUnionT)
 FlatBuffers.build!(b, inst10)
@@ -190,7 +201,7 @@ inst10_2 = FlatBuffers.read(t)
 @test inst10.xs_type == inst10_2.xs_type
 @test [x.x for x in inst10.xs] == [x.x for x in inst10_2.xs]
 
-inst11 = TestVecUnionT(TestUnionU[inst3, inst3])
+inst11 = TestVecUnionT(TestUnionU[inst3, inst3], [dinner for _ = 1:9])
 
 b = FlatBuffers.Builder(TestVecUnionT)
 FlatBuffers.build!(b, inst11)
@@ -199,6 +210,8 @@ inst11_2 = FlatBuffers.read(t)
 
 @test inst11.xs_type == inst11_2.xs_type
 @test [x.x for x in inst11.xs] == [x.x for x in inst11_2.xs]
+@test inst11.ys_type == inst11_2.ys_type
+@test [y for y in inst11.ys] == [y for y in inst11_2.ys]
 
 # test @STRUCT macro
 @STRUCT struct A

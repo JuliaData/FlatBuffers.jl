@@ -154,11 +154,11 @@ function getarray(t, vp, len, ::Type{T}) where {T}
         return A
     end
 end
-function getunionarray(t, vp, types, ::Type{T}) where {T}
+function getunionarray(t, o, types, ::Type{T}) where {T}
     A = T(undef, length(types))
     for i = 1:length(types)
-        A[i] = getvalue(t, vp - t.pos, types[i])
-        vp += sizeof(Int32)
+        newt = Table{T}(t.bytes, t.pos + o + get(t, t.pos + o, Int32))
+        A[i] = FlatBuffers.read(newt, T)
     end
     return A
 end
@@ -206,8 +206,10 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
             types = typeorder.(eltype(TT), args[end])
-            vp = vector(t, o)
-            push!(args, getunionarray(t, vp, types, TT))
+            T2 = definestruct(types)
+            eval(:(newt = getvalue($t, $o, $T2)))
+            eval(:(n = length($T2.types)))
+            push!(args, [getfieldvalue(newt, j) for j = 1:n])
         else
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
             if isa(TT, Union)
@@ -266,17 +268,17 @@ even building its elements recursively if needed (Array of Arrays, Array of tabl
 function buildvector! end
 
 # empty vector
-function buildvector!(b, A::Vector{Nothing}, len)
+function buildvector!(b, A::Vector{Nothing}, len, prev)
     startvector(b, 1, 0, 1)
     return endvector(b, 0)
 end
 # scalar type vector
-function buildvector!(b, A::Vector{T}, len) where {T <: Scalar}
+function buildvector!(b, A::Vector{T}, len, prev) where {T <: Scalar}
     startvector(b, sizeof(T), len, sizeof(T))
     foreach(x->prepend!(b, A[x]), len:-1:1)
     return endvector(b, len)
 end
-function buildvector!(b, A::Vector{T}, len) where {T <: Enum}
+function buildvector!(b, A::Vector{T}, len, prev) where {T <: Enum}
     startvector(b, sizeof(enumtype(T)), len, sizeof(enumtype(T)))
     foreach(x->prepend!(b, enumtype(T)(A[x])), len:-1:1)
     return endvector(b, len)
@@ -288,28 +290,54 @@ function putoffsetvector!(b, offsets, len)
     return endvector(b, len)
 end
 # byte vector vector
-function buildvector!(b, A::Vector{Vector{UInt8}}, len)
+function buildvector!(b, A::Vector{Vector{UInt8}}, len, prev)
     offsets = map(x->createbytevector(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
 # string vector
-function buildvector!(b, A::Vector{T}, len) where {T <: AbstractString}
+function buildvector!(b, A::Vector{T}, len, prev) where {T <: AbstractString}
     offsets = map(x->createstring(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
 # array vector
-function buildvector!(b, A::Vector{Vector{T}}, len) where {T}
+function buildvector!(b, A::Vector{Vector{T}}, len, prev) where {T}
     offsets = map(x->buildbuffer!(b, A[x]), 1:len)
     return putoffsetvector!(b, offsets, len)
 end
+
+# make a new struct which has fields of the given type
+function definestruct(types::Vector{DataType})
+    fields = [:($(gensym())::$(TT)) for TT in types]
+    T1 = gensym()
+    eval(:(mutable struct $T1
+        $(fields...)
+    end))
+    return T1
+end
+
+# make a new struct which has fields of the given type
+# and populate them with values from the vector
+function createstruct(types::Vector{DataType}, A::Vector{T}) where {T}
+    T1 = definestruct(types)
+    eval(:(newt = $T1($(A...))))
+    return newt
+end
+
 # struct or table/object vector
-function buildvector!(b, A::Vector{T}, len) where {T}
+function buildvector!(b, A::Vector{T}, len, prev) where {T}
     if isstruct(T)
         # struct
         startvector(b, sizeof(T), len, alignment(T)) #TODO: forced elsize/alignment correct here?
         foreach(x->buildbuffer!(b, A[x]), len:-1:1)
         return endvector(b, len)
-    else # table/object
+    elseif isa(T, Union)
+        types = typeorder.(T, prev)
+
+        # define a new type, construct one, and pack it into the buffer
+        newt = createstruct(types, A)
+        buildbuffer!(b, newt)
+    else
+        # table/object
         offsets = map(x->buildbuffer!(b, A[x]), 1:len)
         return putoffsetvector!(b, offsets, len)
     end
@@ -323,14 +351,15 @@ down to their last leaf scalar types before returning the highest-level offset.
 """
 function getoffset end
 
-getoffset(b, arg::Nothing) = 0
-getoffset(b, arg::T) where {T <: Scalar} = 0
-getoffset(b, arg::T) where {T <: Enum} = 0
-getoffset(b, arg::Vector{UInt8}) = createbytevector(b, arg)
-getoffset(b, arg::AbstractString) = createstring(b, arg)
-getoffset(b, arg::Vector{T}) where {T} = buildbuffer!(b, arg)
+getoffset(b, arg::Nothing, prev=nothing) = 0
+getoffset(b, arg::T, prev=nothing) where {T <: Scalar} = 0
+getoffset(b, arg::T, prev=nothing) where {T <: Enum} = 0
+getoffset(b, arg::Vector{UInt8}, prev=nothing) = createbytevector(b, arg)
+getoffset(b, arg::AbstractString, prev=nothing) = createstring(b, arg)
+getoffset(b, arg::Vector{T}, prev) where {T, T1} = buildbuffer!(b, arg, prev)
+
 # structs or table/object
-getoffset(b, arg::T) where {T} = isstruct(T) ? 0 : buildbuffer!(b, arg)
+getoffset(b, arg::T, prev=nothing) where {T} = isstruct(T) ? 0 : buildbuffer!(b, arg, prev)
 
 """
 `putslot!` is one of the final steps in building a flatbuffer.
@@ -340,18 +369,18 @@ to the actual data (Arrays, Strings, other tables)
 """
 function putslot! end
 
-putslot!(b, i, arg::T, off) where {T <: Scalar} = prependslot!(b, i, arg, default(T))
-putslot!(b, i, arg::T, off) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default(T))
-putslot!(b, i, arg::AbstractString, off) = prependoffsetslot!(b, i, off, 0)
-putslot!(b, i, arg::Vector{T}, off) where {T} = prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::T, off, prev=nothing) where {T <: Scalar} = prependslot!(b, i, arg, default(T))
+putslot!(b, i, arg::T, off, prev=nothing) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default(T))
+putslot!(b, i, arg::AbstractString, off, prev=nothing) = prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::Vector{T}, off, prev=nothing) where {T} = prependoffsetslot!(b, i, off, 0)
 # structs or table/object
-putslot!(b, i, arg::T, off) where {T} =
-    isstruct(T) ? prependstructslot!(b, i, buildbuffer!(b, arg), 0) : prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::T, off, prev=nothing) where {T} =
+    isstruct(T) ? prependstructslot!(b, i, buildbuffer!(b, arg, prev), 0) : prependoffsetslot!(b, i, off, 0)
 
-function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
+function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
     if T <: Array
         # array of things
-        n = buildvector!(b, arg, length(arg))
+        n = buildvector!(b, arg, length(arg), prev)
     elseif isstruct(T)
         # build a struct type with provided `arg`
         all(isstruct, T.types) || throw(ArgumentError("can't seralize flatbuffer, $T is not a pure struct"))
@@ -364,7 +393,7 @@ function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
             elseif isbitstype(typ)
                 prepend!(b, getfield(arg,i))
             else
-                buildbuffer!(b, getfield(arg,i))
+                buildbuffer!(b, getfield(arg, i), getprevfieldvalue(arg, i))
             end
         end
         n = offset(b)
@@ -372,11 +401,13 @@ function buildbuffer!(b::Builder{T1}, arg::T) where {T1, T}
         # build a table type
         # check for string/array/table types
         numfields = length(T.types)
-        offsets = [getoffset(b,getfieldvalue(arg,i)) for i = 1:numfields]
+        offsets = [getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)) for i = 1:numfields]
 
         # all nested have been written, with offsets in `offsets[]`
         startobject(b, numfields)
-        foreach(i->putslot!(b, i, getfieldvalue(arg,i), offsets[i]), 1:numfields)
+        for i = 1:numfields
+            putslot!(b, i, getfieldvalue(arg,i), offsets[i], getprevfieldvalue(arg, i))
+        end
         n = endobject(b)
     end
     return n
