@@ -5,6 +5,7 @@ struct UndefinedType end
 const Undefined = UndefinedType()
 
 getfieldvalue(obj::T, i) where {T} = isdefined(obj, i) ? getfield(obj, i) : Undefined
+getprevfieldvalue(obj::T, i) where {T} = i == 1 ? nothing : getfieldvalue(obj, i - 1)
 
 """
      Scalar
@@ -356,7 +357,7 @@ getoffset(b, arg::T, prev=nothing) where {T <: Scalar} = 0
 getoffset(b, arg::T, prev=nothing) where {T <: Enum} = 0
 getoffset(b, arg::Vector{UInt8}, prev=nothing) = createbytevector(b, arg)
 getoffset(b, arg::AbstractString, prev=nothing) = createstring(b, arg)
-getoffset(b, arg::Vector{T}, prev) where {T, T1} = buildbuffer!(b, arg, prev)
+getoffset(b, arg::Vector{T}, prev) where {T} = buildbuffer!(b, arg, prev)
 
 # structs or table/object
 getoffset(b, arg::T, prev=nothing) where {T} = isstruct(T) ? 0 : buildbuffer!(b, arg, prev)
