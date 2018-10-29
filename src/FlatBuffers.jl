@@ -1,5 +1,7 @@
 module FlatBuffers
 
+import Parameters
+
 # utils
 struct UndefinedType end
 const Undefined = UndefinedType()
@@ -231,6 +233,15 @@ FlatBuffers.read(b::Builder{T}) where {T} = FlatBuffers.read(Table(T, b.bytes[b.
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
 FlatBuffers.read(::Type{T}, bytes) where {T} = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
 
+function getrootas(::Type{T}, bytes::AbstractVector{UInt8}) where {T}
+    # put the size on the front of the buffer and then call read
+    buf = hex2bytes(string(length(bytes), base=16, pad=4))
+    append!(buf, bytes)
+    FlatBuffers.read(T, buf)
+end
+
+FlatBuffers.getrootas(::Type{T}, io::IO) where {T} = FlatBuffers.getrootas(T, read(io))
+
 """
     flat_bytes = bytes(b)
 
@@ -382,34 +393,51 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
     if T <: Array
         # array of things
         n = buildvector!(b, arg, length(arg), prev)
-    elseif isstruct(T)
-        # build a struct type with provided `arg`
-        all(isstruct, T.types) || throw(ArgumentError("can't seralize flatbuffer, $T is not a pure struct"))
-        align = alignment(T)
-        prep!(b, align, 2align)
-        for i = length(T.types):-1:1
-            typ = T.types[i]
-            if typ <: Enum
-                prepend!(b, enumtype(typ)(getfield(arg,i)))
-            elseif isbitstype(typ)
-                prepend!(b, getfield(arg,i))
-            else
-                buildbuffer!(b, getfield(arg, i), getprevfieldvalue(arg, i))
+    else
+        numfields = length(T.types)
+        # populate the _type field before unions/vectors of unions
+        kwargs = Dict{Symbol, Any}()
+        for i = 2:numfields
+            field = getfield(arg, i)
+            prevname = fieldnames(T)[i - 1]
+            if typeof(field) isa Vector && eltype(field) isa Union
+                kwargs[prevname] = FlatBuffers.typeorder.(eltype(field), field)
+            elseif typeof(field) isa Union
+                kwargs[prevname] = FlatBuffers.typeorder(typeof(field), field)
             end
         end
-        n = offset(b)
-    else
-        # build a table type
-        # check for string/array/table types
-        numfields = length(T.types)
-        offsets = [getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)) for i = 1:numfields]
-
-        # all nested have been written, with offsets in `offsets[]`
-        startobject(b, numfields)
-        for i = 1:numfields
-            putslot!(b, i, getfieldvalue(arg,i), offsets[i], getprevfieldvalue(arg, i))
+        if !isempty(kwargs)
+            arg = Parameters.reconstruct(arg; kwargs...)
         end
-        n = endobject(b)
+        if isstruct(T)
+            # build a struct type with provided `arg`
+            all(isstruct, T.types) || throw(ArgumentError("can't seralize flatbuffer, $T is not a pure struct"))
+            align = alignment(T)
+            prep!(b, align, 2align)
+            for i = length(T.types):-1:1
+                typ = T.types[i]
+                if typ <: Enum
+                    prepend!(b, enumtype(typ)(getfield(arg,i)))
+                elseif isbitstype(typ)
+                    prepend!(b, getfield(arg,i))
+                else
+                    buildbuffer!(b, getfield(arg, i), getprevfieldvalue(arg, i))
+                end
+            end
+            n = offset(b)
+        else
+            # build a table type
+            # check for string/array/table types
+            numfields = length(T.types)
+            offsets = [getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)) for i = 1:numfields]
+
+            # all nested have been written, with offsets in `offsets[]`
+            startobject(b, numfields)
+            for i = 1:numfields
+                putslot!(b, i, getfieldvalue(arg,i), offsets[i], getprevfieldvalue(arg, i))
+            end
+            n = endobject(b)
+        end
     end
     return n
 end
