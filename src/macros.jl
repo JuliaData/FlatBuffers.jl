@@ -201,8 +201,8 @@ function createdefaultfns(typedef::Expr)
     T = cons.args[1]
 
     [:(function FlatBuffers.default($T, ::Type{$TT}, sym)
-        $(kwdict[TT])
-        return FlatBuffers.default($TT)
+        $TT($(kwdict[TT]))
+        return $TT(FlatBuffers.default($TT))
     end) for TT in keys(kwdict)]
 end
 

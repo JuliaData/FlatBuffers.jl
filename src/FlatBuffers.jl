@@ -4,8 +4,9 @@ module FlatBuffers
 struct UndefinedType end
 const Undefined = UndefinedType()
 
+
 getfieldvalue(obj::T, i) where {T} = isdefined(obj, i) ? getfield(obj, i) : Undefined
-getprevfieldvalue(obj::T, i) where {T} = i == 1 ? nothing : getfieldvalue(obj, i - 1)
+getprevfieldvalue(obj::T, i) where {T} = i == 1 ? missing : getfieldvalue(obj, i - 1)
 
 """
      Scalar
@@ -25,8 +26,28 @@ default(::Type{T}) where {T <: Scalar} = zero(T)
 default(::Type{T}) where {T <: AbstractString} = ""
 default(::Type{T}) where {T <: Enum} = enumtype(T)(T(0))
 default(::Type{Vector{T}}) where {T} = T[]
+
+# attempt to call default constructors for the type,
+# use above methods as fallback
+function default(::Type{T}, i::Integer) where {T}
+    TT = T.types[i]
+    try
+        return TT(FlatBuffers.default(T, T.types[i], fieldnames(T)[i]))
+    # catch because Parameters throws an error if there is no
+    # default value defined...
+    catch
+    end
+    return TT(default(TT))
+end
+
 # fallback that recursively builds a default; for structs/tables
-default(::Type{T}) where {T} = isa(T, Union) ? nothing : T(map(TT->TT == T ? TT() : default(TT),T.types)...)
+function default(::Type{T}) where {T}
+    if isa(T, Union)
+        return nothing
+    else
+        return T([default(T, i) for i = 1:length(T.types)]...)
+    end
+end
 
 function typeorder end
 
@@ -379,12 +400,12 @@ to the actual data (Arrays, Strings, other tables)
 """
 function putslot! end
 
-putslot!(b, i, arg::T, off, prev=nothing) where {T <: Scalar} = prependslot!(b, i, arg, default(T))
-putslot!(b, i, arg::T, off, prev=nothing) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default(T))
-putslot!(b, i, arg::AbstractString, off, prev=nothing) = prependoffsetslot!(b, i, off, 0)
-putslot!(b, i, arg::Vector{T}, off, prev=nothing) where {T} = prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::T, off, default, prev) where {T <: Scalar} = prependslot!(b, i, arg, default)
+putslot!(b, i, arg::T, off, default, prev) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default)
+putslot!(b, i, arg::AbstractString, off, default, prev) = prependoffsetslot!(b, i, off, 0)
+putslot!(b, i, arg::Vector{T}, off, default, prev) where {T} = prependoffsetslot!(b, i, off, 0)
 # structs or table/object
-putslot!(b, i, arg::T, off, prev=nothing) where {T} =
+putslot!(b, i, arg::T, off, default, prev) where {T} =
     isstruct(T) ? prependstructslot!(b, i, buildbuffer!(b, arg, prev), 0) : prependoffsetslot!(b, i, off, 0)
 
 function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
@@ -427,12 +448,25 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             # build a table type
             # check for string/array/table types
             numfields = length(T.types)
-            offsets = [getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)) for i = 1:numfields]
-
+            isdefault = falses(numfields)
+            offsets = []
+            for i = 1:numfields
+                isdefault[i] = getfieldvalue(arg, i) == default(T, i)
+                o = isdefault[i] ? 0 : getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i))
+                push!(offsets, o)
+            end
             # all nested have been written, with offsets in `offsets[]`
             startobject(b, numfields)
             for i = 1:numfields
-                putslot!(b, i, getfieldvalue(arg,i), offsets[i], getprevfieldvalue(arg, i))
+                if !isdefault[i]
+                    d = default(T, i)
+                    putslot!(b, i,
+                        getfieldvalue(arg, i),
+                        offsets[i],
+                        d,
+                        getprevfieldvalue(arg, i)
+                    )
+                end
             end
             n = endobject(b)
         end
