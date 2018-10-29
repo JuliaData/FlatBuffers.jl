@@ -155,16 +155,22 @@ end
 import Parameters
 
 function getdef(typedef::Expr)
-    typedef.args[2].args[3]
+    typedef.args[end-16].args[end].args[end]
 end
 
 function getfielddefs(typedef::Expr)
-    getdef(typedef).args[3].args
+    getdef(typedef).args[2:2:end]
 end
 
-function getinnerconstructor(typedef::Expr)
+function getconstructor(typedef::Expr)
     # TODO: this is so evil and will fall over in the slightest breeze.
-    getdef(typedef).args[end].args[end-1].args[end-1]
+    cons = getdef(typedef).args[end-1].args[1]
+    typevars = []
+    if :head in propertynames(cons) && cons.head == :where
+        typevars = cons.args[2:end]
+        cons = cons.args[1]
+    end
+    cons, typevars
 end
 
 function getkwtype(defs, name)
@@ -177,14 +183,16 @@ function getkwtype(defs, name)
 end
 
 function createdefaultfns(typedef::Expr)
-    cons = getinnerconstructor(typedef)
-    parameters = cons.args[end]
-    @assert parameters.head == :parameters
+    cons, typevars = getconstructor(typedef)
+    T = cons.args[1]
+    params = cons.args[2]
+
+    @assert params.head == :parameters
 
     kwargs = []
     defs = getfielddefs(typedef)
     kwdict = Dict{Any, Any}()
-    for p in parameters.args
+    for p in params.args
         name = p.args[1]
         type = getkwtype(defs, name)
         if type == nothing
@@ -198,9 +206,7 @@ function createdefaultfns(typedef::Expr)
         kwdict[type] = ifblock
     end
 
-    T = cons.args[1]
-
-    [:(function FlatBuffers.default($T, ::Type{$TT}, sym)
+    [:(function FlatBuffers.default(::Type{$T}, ::Type{$TT}, sym) where {$(typevars...)}
         $TT($(kwdict[TT]))
         return $TT(FlatBuffers.default($TT))
     end) for TT in keys(kwdict)]
