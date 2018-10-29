@@ -154,16 +154,16 @@ end
 
 import Parameters
 
+# TODO: this is so evil and will fall over in the slightest breeze.
 function getdef(typedef::Expr)
     typedef.args[end-16].args[end].args[end]
 end
 
 function getfielddefs(typedef::Expr)
-    getdef(typedef).args[2:2:end]
+    [a for a in getdef(typedef).args[1:end-2] if a isa Expr]
 end
 
 function getconstructor(typedef::Expr)
-    # TODO: this is so evil and will fall over in the slightest breeze.
     cons = getdef(typedef).args[end-1].args[1]
     typevars = []
     if :head in propertynames(cons) && cons.head == :where
@@ -201,14 +201,14 @@ function createdefaultfns(typedef::Expr)
         value = p.args[end]
         ifblock = get(kwdict, type, quote end)
         push!(ifblock.args, :(if sym == $(QuoteNode(name))
-                                    return $value
+                                    return $type($value)
                                 end))
         kwdict[type] = ifblock
     end
 
     [:(function FlatBuffers.default(::Type{$T}, ::Type{$TT}, sym) where {$(typevars...)}
-        $TT($(kwdict[TT]))
-        return $TT(FlatBuffers.default($TT))
+        $(kwdict[TT])
+        return FlatBuffers.default($TT)
     end) for TT in keys(kwdict)]
 end
 

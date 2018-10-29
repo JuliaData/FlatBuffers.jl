@@ -32,12 +32,12 @@ default(::Type{Vector{T}}) where {T} = T[]
 function default(::Type{T}, i::Integer) where {T}
     TT = T.types[i]
     try
-        return TT(FlatBuffers.default(T, T.types[i], fieldnames(T)[i]))
+        return FlatBuffers.default(T, T.types[i], fieldnames(T)[i])
     # catch because Parameters throws an error if there is no
     # default value defined...
     catch
     end
-    return TT(default(TT))
+    return default(TT)
 end
 
 # fallback that recursively builds a default; for structs/tables
