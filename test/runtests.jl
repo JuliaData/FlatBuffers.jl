@@ -213,6 +213,17 @@ inst11_2 = FlatBuffers.read(t)
 @test inst11.ys_type == inst11_2.ys_type
 @test [y for y in inst11.ys] == [y for y in inst11_2.ys]
 
+# test default fields
+@with_kw struct UltimateAnswer
+    answer::Int32 = 42
+end
+
+x = UltimateAnswer()
+@test x.answer == 42
+@test FlatBuffers.default(UltimateAnswer, Int32, :answer) == 42
+
+# TODO: serialising defaults seems broken for some reason
+
 # test @STRUCT macro
 @STRUCT struct A
     a::Int32

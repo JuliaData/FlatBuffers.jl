@@ -1,4 +1,4 @@
-export @UNION, @DEFAULT, @ALIGN, @STRUCT
+export @UNION, @DEFAULT, @ALIGN, @STRUCT, @with_kw
 
 const __module__ = 0
 
@@ -152,8 +152,68 @@ macro DEFAULT(T, kwargs...)
     end)
 end
 
+import Parameters
+
+function getdef(typedef::Expr)
+    typedef.args[2].args[3]
+end
+
+function getfielddefs(typedef::Expr)
+    getdef(typedef).args[3].args[2:2:(end-1)]
+end
+
+function getinnerconstructor(typedef::Expr)
+    # TODO: this is so evil and will fall over in the slightest breeze.
+    getdef(typedef).args[end].args[end-1].args[end-1]
+end
+
+function getkwvalue(parameters, name)
+    value = nothing
+    for arg in parameters.args
+        @assert arg.head == :kw
+        @assert length(arg.args) == 2
+        if arg.args[1] == name
+            value = arg.args[2]
+        end
+    end
+    return value
+end
+
+function createdefaultfns(typedef::Expr)
+    cons = getinnerconstructor(typedef)
+    parameters = cons.args[end]
+    @assert parameters.head == :parameters
+
+    kwargs = []
+    defs = getfielddefs(typedef)
+    kwdict = Dict{Any, Any}()
+    for d in defs
+        name = d.args[1]
+        type = d.args[end]
+        value = getkwvalue(parameters, name)
+        ifblock = get(kwdict, type, quote end)
+        push!(ifblock.args, :(if sym == $(QuoteNode(name))
+                                    return $value
+                                end))
+        kwdict[type] = ifblock
+    end
+
+    T = cons.args[1]
+
+    [:(function FlatBuffers.default($T, ::Type{$TT}, sym)
+        $(kwdict[TT])
+        return FlatBuffers.default($TT)
+    end) for TT in keys(kwdict)]
+end
+
+macro with_kw(typedef)
+    body = Parameters.with_kw(typedef, __module__, true)
+    defaults = createdefaultfns(body)
+    defaultsblock = Expr(:block, body, defaults...)
+    return esc(defaultsblock)
+end
+
 #TODO:
-# handle default values
 # handle id?
 # handle deprecated
 # nested_flatbuffer
