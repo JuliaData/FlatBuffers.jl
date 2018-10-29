@@ -76,7 +76,7 @@ function Base.show(io::IO, x::Union{Builder{T},Table{T}}) where {T}
         # print vtable offset
         syms = T.name.names
         maxpad = max(length(" vtable rel. start pos: "), maximum(map(x->length(string(x)), syms)))
-        stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[9:end-1]),'"',"")
+        stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[9:end-1]),'"' => "")
         println(io, stringify(buffer, 1, 4, " root position: "))
         vtaboff = readbuffer(buffer, pos, Int32)
         vtabstart = pos - vtaboff + 5

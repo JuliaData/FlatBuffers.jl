@@ -1,6 +1,7 @@
 using FlatBuffers
 using Test
 
+include("defaults.jl")
 include("internals.jl")
 CheckByteLayout()
 CheckManualBuild()
@@ -212,17 +213,6 @@ inst11_2 = FlatBuffers.read(t)
 @test [x.x for x in inst11.xs] == [x.x for x in inst11_2.xs]
 @test inst11.ys_type == inst11_2.ys_type
 @test [y for y in inst11.ys] == [y for y in inst11_2.ys]
-
-# test default fields
-@with_kw struct UltimateAnswer
-    answer::Int32 = 42
-end
-
-x = UltimateAnswer()
-@test x.answer == 42
-@test FlatBuffers.default(UltimateAnswer, Int32, :answer) == 42
-
-# TODO: serialising defaults seems broken for some reason
 
 # test @STRUCT macro
 @STRUCT struct A

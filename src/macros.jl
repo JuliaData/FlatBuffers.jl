@@ -159,7 +159,7 @@ function getdef(typedef::Expr)
 end
 
 function getfielddefs(typedef::Expr)
-    getdef(typedef).args[3].args[2:2:(end-1)]
+    getdef(typedef).args[3].args
 end
 
 function getinnerconstructor(typedef::Expr)
@@ -167,16 +167,13 @@ function getinnerconstructor(typedef::Expr)
     getdef(typedef).args[end].args[end-1].args[end-1]
 end
 
-function getkwvalue(parameters, name)
-    value = nothing
-    for arg in parameters.args
-        @assert arg.head == :kw
-        @assert length(arg.args) == 2
-        if arg.args[1] == name
-            value = arg.args[2]
+function getkwtype(defs, name)
+    for d in defs
+        if :args in propertynames(d) && d.args[1] == name
+            return d.args[end]
         end
     end
-    return value
+    return nothing
 end
 
 function createdefaultfns(typedef::Expr)
@@ -187,10 +184,13 @@ function createdefaultfns(typedef::Expr)
     kwargs = []
     defs = getfielddefs(typedef)
     kwdict = Dict{Any, Any}()
-    for d in defs
-        name = d.args[1]
-        type = d.args[end]
-        value = getkwvalue(parameters, name)
+    for p in parameters.args
+        name = p.args[1]
+        type = getkwtype(defs, name)
+        if type == nothing
+            continue
+        end
+        value = p.args[end]
         ifblock = get(kwdict, type, quote end)
         push!(ifblock.args, :(if sym == $(QuoteNode(name))
                                     return $value
@@ -210,7 +210,7 @@ macro with_kw(typedef)
     body = Parameters.with_kw(typedef, __module__, true)
     defaults = createdefaultfns(body)
     defaultsblock = Expr(:block, body, defaults...)
-    return esc(defaultsblock)
+    esc(defaultsblock)
 end
 
 #TODO:
