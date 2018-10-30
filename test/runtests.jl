@@ -1,6 +1,7 @@
 using FlatBuffers
 using Test
 
+include("flatc.jl")
 include("defaults.jl")
 include("internals.jl")
 CheckByteLayout()
@@ -16,17 +17,17 @@ checkFuzz(100, 100, true)
 
 include("monster.jl")
 
-vec3 = Example.Vec3(1.0, 2.0, 3.0, 3.0, Example.Color(1), Example.Test(5, 6))
-test4 = Example.Test[Example.Test(10, 20), Example.Test(30, 40)]
+vec3 = SmallExample.Vec3(1.0, 2.0, 3.0, 3.0, SmallExample.Color(1), SmallExample.Test(5, 6))
+test4 = SmallExample.Test[SmallExample.Test(10, 20), SmallExample.Test(30, 40)]
 testArrayOfString = ["test1","test2"]
 
-mon = Example.Monster(vec3, 150, 80, "MyMonster", false, collect(0x00:0x04),
-        Example.Blue, test4, testArrayOfString, Example.Monster[],
-        UInt8[], Example.Stat("",0,0), false, 0, 0, 0, 0, 0, 0, 0, 0,
+mon = SmallExample.Monster(vec3, 150, 80, "MyMonster", false, collect(0x00:0x04),
+        SmallExample.Blue, test4, testArrayOfString, SmallExample.Monster[],
+        UInt8[], SmallExample.Stat("",0,0), false, 0, 0, 0, 0, 0, 0, 0, 0,
         Bool[], 0, 0, 0)
 b = FlatBuffers.build!(mon)
 monst = FlatBuffers.read(b)
-monst2 = FlatBuffers.read(Example.Monster, FlatBuffers.bytes(b))
+monst2 = FlatBuffers.read(SmallExample.Monster, FlatBuffers.bytes(b))
 
 @test mon.pos == monst.pos
 @test mon.pos == monst2.pos

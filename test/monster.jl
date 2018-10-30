@@ -1,4 +1,4 @@
-module Example
+module SmallExample
 
 using FlatBuffers
 
