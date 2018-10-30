@@ -45,7 +45,7 @@ end
 
 # fallback that recursively builds a default; for structs/tables
 function default(::Type{T}) where {T}
-    if isa(T, Union)
+    if isa(T, Union) || isa(T, UnionAll)
         return nothing
     else
         return T([default(T, i) for i = 1:length(T.types)]...)
@@ -214,7 +214,8 @@ function getvalue(t, o, ::Type{T}) where {T}
             return unsafe_load(convert(Ptr{T}, pointer(view(t.bytes, (t.pos + o + 1):length(t.bytes)))))
         end
     else
-        newt = Table{T}(t.bytes, t.pos + o)
+        o += t.pos
+        newt = Table{T}(t.bytes, indirect(t, o))
         return FlatBuffers.read(newt, T)
     end
 end
@@ -228,6 +229,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     numfields = length(T.types)
     for i = 1:numfields
         TT = T.types[i]
+        oo = 4 + ((i - 1) * 2)
         o = offset(t, offsets(T)[i])
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
@@ -237,6 +239,10 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             eval(:(n = length($T2.types)))
             push!(args, [getfieldvalue(newt, j) for j = 1:n])
         else
+            # hacks! if it's a union all, assume it's because we're working around circular dependencies
+            if TT <: AbstractVector && isa(eltype(TT), UnionAll)
+                TT = Vector{T}
+            end
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
             # except in the special case of a union with Nothing and a concrete type
             if isa(TT, Union)
