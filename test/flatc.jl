@@ -14,35 +14,55 @@ import .MyGame.Example.TestSimpleTableWithEnum
 # circular type definitions using type parameters
 FlatBuffers.typeorder(::Type{Any_}, i::Integer) = [Nothing, Monster{Any_}, TestSimpleTableWithEnum, Example2.Monster][i+1]
 
-mon = open(joinpath(@__DIR__, "monsterdata_test.mon"), "r") do f read(f) end
-rootpos = FlatBuffers.readbuffer(mon, 0, Int32)
-monster = FlatBuffers.read(Monster{Any_}, mon, rootpos)
+function loadmonsterfile(filename)
+    mon = open(joinpath(@__DIR__, filename), "r") do f read(f) end
+    rootpos = FlatBuffers.readbuffer(mon, 0, Int32)
+    return FlatBuffers.read(Monster{Any_}, mon, rootpos)
+end
 
-@test monster.hp == 80
-@test monster.mana == 150
-@test monster.name == "MyMonster"
+function checkmonster(monster)
+    @test monster.hp == 80
+    @test monster.mana == 150
+    @test monster.name == "MyMonster"
 
-vec = monster.pos
+    vec = monster.pos
 
-@test vec.x == 1.0
-@test vec.y == 2.0
-@test vec.z == 3.0
-@test vec.test1 == 3.0
-@test vec.test2 == 2
+    @test vec.x == 1.0
+    @test vec.y == 2.0
+    @test vec.z == 3.0
+    @test vec.test1 == 3.0
+    @test vec.test2 == 2
+    @test vec.test3_a == 5
+    @test vec.test3_b == 6
 
-# t = vec.test3
+    monster2 = monster.test
+    @test monster2.name == "Fred"
 
-# @test t.A == 5
-# @test t.B == 6
+    @test length(monster.inventory) == 5
+    @test sum(monster.inventory) == 10
 
-# initialize a Table from a union field Test(...)
-monster2 = monster.test
+    @test monster.vector_of_longs == [10 ^ (2*i) for i = 0:4]
+    @test monster.vector_of_doubles == [-1.7976931348623157e+308, 0, 1.7976931348623157e+308]
 
-# initialize a Monster from the Table from the union
+    @test length(monster.test4) == 2
 
-@test monster2.name == "Fred"
+    (test0, test1) = monster.test4
+    @test sum([test0.a, test0.b, test1.a, test1.b]) == 100
 
-# iterate through the first monster's inventory:
-@test length(monster.inventory) == 5
+    @test monster.testarrayofstring == ["test1", "test2"]
+    @test monster.testarrayoftables == []
+end
 
-@test sum(monster.inventory) == 10
+function checkpassthrough(monster)
+    b = FlatBuffers.Builder(Monster{Any_})
+    FlatBuffers.build!(b, monster)
+    bytes = FlatBuffers.bytes(b)
+    newmonster = FlatBuffers.read(Monster{Any_}, bytes, 0)
+    checkmonster(newmonster)
+end
+
+for testcase in ["test", "python_wire"]
+    mon = loadmonsterfile("monsterdata_$testcase.mon")
+    checkmonster(mon)
+    # checkpassthrough(mon)
+end

@@ -51,7 +51,7 @@ function fieldlayout(mod, typ, exprs...)
         if !isbitstype(T)
             exprs2 = [Expr(:(::), nm, typ) for (nm,typ) in zip(fieldnames(T),T.types)]
             fields2, values2 = fieldlayout(mod, T, exprs2...)
-            append!(fields, map(x->Expr(:(::), Symbol(string(expr.args[1],'_',T,'_',x.args[1])), x.args[2]), fields2))
+            append!(fields, map(x->Expr(:(::), Symbol(string(expr.args[1],'_',x.args[1])), x.args[2]), fields2))
             append!(values, map(x->x == 0 ? 0 : Expr(:call, :getfield, expr.args[1], QuoteNode(x)), values2))
         else
             push!(fields, expr)
