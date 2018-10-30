@@ -229,7 +229,6 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     numfields = length(T.types)
     for i = 1:numfields
         TT = T.types[i]
-        oo = 4 + ((i - 1) * 2)
         o = offset(t, offsets(T)[i])
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
@@ -407,8 +406,8 @@ to the actual data (Arrays, Strings, other tables)
 """
 function putslot! end
 
-putslot!(b, i, arg::T, off, default, prev) where {T <: Scalar} = prependslot!(b, i, arg, default)
-putslot!(b, i, arg::T, off, default, prev) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default)
+putslot!(b, i, arg::T, off, default, prev) where {T <: Scalar} = prependslot!(b, i, arg, T(default))
+putslot!(b, i, arg::T, off, default, prev) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), T(default))
 putslot!(b, i, arg::AbstractString, off, default, prev) = prependoffsetslot!(b, i, off, 0)
 putslot!(b, i, arg::Vector{T}, off, default, prev) where {T} = prependoffsetslot!(b, i, off, 0)
 # structs or table/object
