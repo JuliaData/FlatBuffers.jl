@@ -19,6 +19,9 @@ const Scalar = Union{UndefinedType, Bool,
 
 isstruct(T) = isconcretetype(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
+isunionwithnothing(T) = T.a == Nothing && !(isa(T.b, Union))
+
+offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
@@ -97,7 +100,8 @@ function Base.show(io::IO, x::Union{Builder{T},Table{T}}) where {T}
         # print vtable offset
         syms = T.name.names
         maxpad = max(length(" vtable rel. start pos: "), maximum(map(x->length(string(x)), syms)))
-        stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[9:end-1]),'"' => "")
+
+        stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[5:end-1]),'"' => "")
         println(io, stringify(buffer, 1, 4, " root position: "))
         vtaboff = readbuffer(buffer, pos, Int32)
         vtabstart = pos - vtaboff + 5
@@ -210,7 +214,7 @@ function getvalue(t, o, ::Type{T}) where {T}
             return unsafe_load(convert(Ptr{T}, pointer(view(t.bytes, (t.pos + o + 1):length(t.bytes)))))
         end
     else
-        newt = Table{T}(t.bytes, t.pos + o + get(t, t.pos + o, Int32))
+        newt = Table{T}(t.bytes, t.pos + o)
         return FlatBuffers.read(newt, T)
     end
 end
@@ -224,7 +228,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     numfields = length(T.types)
     for i = 1:numfields
         TT = T.types[i]
-        o = offset(t, 4 + ((i - 1) * 2))
+        o = offset(t, offsets(T)[i])
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
             types = typeorder.(eltype(TT), args[end])
@@ -234,8 +238,13 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             push!(args, [getfieldvalue(newt, j) for j = 1:n])
         else
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
+            # except in the special case of a union with Nothing and a concrete type
             if isa(TT, Union)
-                TT = typeorder(TT, args[end])
+                if isunionwithnothing(TT)
+                    TT = TT.b
+                else
+                    TT = typeorder(TT, args[end])
+                end
             end
             if o == 0
                 push!(args, default(T, TT, T.name.names[i]))
@@ -244,6 +253,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             end
         end
     end
+
     return T(args...)
 end
 
@@ -251,15 +261,6 @@ FlatBuffers.read(::Type{T}, buffer::Vector{UInt8}, pos::Integer) where {T} = Fla
 FlatBuffers.read(b::Builder{T}) where {T} = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
 FlatBuffers.read(::Type{T}, bytes) where {T} = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
-
-function getrootas(::Type{T}, bytes::AbstractVector{UInt8}) where {T}
-    # put the size on the front of the buffer and then call read
-    buf = hex2bytes(string(length(bytes), base=16, pad=4))
-    append!(buf, bytes)
-    FlatBuffers.read(T, buf)
-end
-
-FlatBuffers.getrootas(::Type{T}, io::IO) where {T} = FlatBuffers.getrootas(T, read(io))
 
 """
     flat_bytes = bytes(b)
@@ -421,7 +422,7 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             prevname = fieldnames(T)[i - 1]
             if typeof(field) isa Vector && eltype(field) isa Union
                 kwargs[prevname] = FlatBuffers.typeorder.(eltype(field), field)
-            elseif typeof(field) isa Union
+            elseif typeof(field) isa Union && !isunionwithnothing(typeof(field))
                 kwargs[prevname] = FlatBuffers.typeorder(typeof(field), field)
             end
         end
