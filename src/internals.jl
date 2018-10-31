@@ -6,7 +6,7 @@ const TableOrBuilder = Union{Table,Builder}
 const Bytes2Type = Dict{Int, DataType}(1=>UInt8, 2=>UInt16, 4=>UInt32, 8=>UInt64)
 
 Base.get(t::TableOrBuilder, pos, ::Type{T}) where {T} = read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), T)
-readbuffer(t::Vector{UInt8}, pos::Int, ::Type{T}) where {T} = read(IOBuffer(view(t, (pos+1):length(t))), T)
+readbuffer(t::AbstractVector{UInt8}, pos::Int, ::Type{T}) where {T} = read(IOBuffer(view(t, (pos+1):length(t))), T)
 Base.get(t::TableOrBuilder, pos, ::Type{T}) where {T <: Enum} = T(read(IOBuffer(view(t.bytes, (pos+1):length(t.bytes))), Bytes2Type[sizeof(T)]))
 
 """

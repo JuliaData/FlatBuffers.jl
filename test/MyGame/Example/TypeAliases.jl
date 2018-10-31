@@ -19,9 +19,13 @@ FlatBuffers.@with_kw mutable struct TypeAliases
     vf64::Vector{Float64} = []
 end
 FlatBuffers.@ALIGN(TypeAliases, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:TypeAliases} = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
+FlatBuffers.offsets(::Type{T}) where {T<:TypeAliases} = [
+    0x00000004, 0x00000006, 0x00000008, 0x0000000A, 
+    0x0000000C, 0x0000000E, 0x00000010, 0x00000012, 
+    0x00000014, 0x00000016, 0x00000018, 0x0000001A
+]
 
-function TypeAliases(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(TypeAliases, buf, offset)
+function TypeAliases(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(TypeAliases, buf, pos)
 end
 

@@ -9,9 +9,8 @@ import FlatBuffers
     distance::UInt32
 end
 FlatBuffers.@ALIGN(Ability, 4)
-FlatBuffers.offsets(::Type{T}) where {T<:Ability} = [0, 4]
 
-function Ability(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(Ability, buf, offset)
+function Ability(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(Ability, buf, pos)
 end
 

@@ -16,8 +16,7 @@ FlatBuffers.typeorder(::Type{Any_}, i::Integer) = [Nothing, Monster{Any_}, TestS
 
 function loadmonsterfile(filename)
     mon = open(joinpath(@__DIR__, filename), "r") do f read(f) end
-    rootpos = FlatBuffers.readbuffer(mon, 0, Int32)
-    return FlatBuffers.read(Monster{Any_}, mon, rootpos)
+    return FlatBuffers.read(Monster{Any_}, mon)
 end
 
 function checkmonster(monster)
@@ -51,15 +50,19 @@ function checkmonster(monster)
 
     @test monster.testarrayofstring == ["test1", "test2"]
     @test monster.testarrayoftables == []
+    @test monster.testf == 3.14159f0
 end
 
 function checkpassthrough(monster)
     b = FlatBuffers.Builder(Monster{Any_})
     FlatBuffers.build!(b, monster)
     bytes = FlatBuffers.bytes(b)
-    newmonster = FlatBuffers.read(Monster{Any_}, bytes, 0)
+    newmonster = FlatBuffers.read(Monster{Any_}, bytes)
     checkmonster(newmonster)
 end
+
+@test FlatBuffers.file_identifier(Monster) == "MONS"
+@test FlatBuffers.file_extension(Monster) == "mon"
 
 for testcase in ["test", "python_wire"]
     mon = loadmonsterfile("monsterdata_$testcase.mon")

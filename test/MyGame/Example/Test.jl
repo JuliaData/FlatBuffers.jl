@@ -9,9 +9,8 @@ import FlatBuffers
     b::Int8
 end
 FlatBuffers.@ALIGN(Test, 2)
-FlatBuffers.offsets(::Type{T}) where {T<:Test} = [0, 2]
 
-function Test(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(Test, buf, offset)
+function Test(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(Test, buf, pos)
 end
 

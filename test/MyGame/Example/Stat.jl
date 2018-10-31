@@ -10,9 +10,11 @@ FlatBuffers.@with_kw mutable struct Stat
     count::UInt16 = 0
 end
 FlatBuffers.@ALIGN(Stat, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:Stat} = [4, 6, 8]
+FlatBuffers.offsets(::Type{T}) where {T<:Stat} = [
+    0x00000004, 0x00000006, 0x00000008
+]
 
-function Stat(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(Stat, buf, offset)
+function Stat(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(Stat, buf, pos)
 end
 

@@ -72,7 +72,7 @@ mutable struct TestMixT
     z::Vector{Int8}
 end
 
-inst4 = TestMixT(10,"hey there sailor",[1,2,3])
+inst4 = TestMixT(10,"singin tooralli ooralli addity",[1,2,3])
 
 b = FlatBuffers.Builder(TestMixT)
 FlatBuffers.build!(b, inst4)

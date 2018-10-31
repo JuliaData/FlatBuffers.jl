@@ -8,7 +8,7 @@ mutable struct InParentNamespace
 end
 FlatBuffers.@ALIGN(InParentNamespace, 1)
 
-function InParentNamespace(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(InParentNamespace, buf, offset)
+function InParentNamespace(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(InParentNamespace, buf, pos)
 end
 

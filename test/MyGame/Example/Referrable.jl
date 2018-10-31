@@ -8,9 +8,11 @@ FlatBuffers.@with_kw mutable struct Referrable
     id::UInt64 = 0
 end
 FlatBuffers.@ALIGN(Referrable, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:Referrable} = [4]
+FlatBuffers.offsets(::Type{T}) where {T<:Referrable} = [
+    0x00000004
+]
 
-function Referrable(buf::Vector{UInt8}, offset::Integer)
-    FlatBuffers.read(Referrable, buf, offset)
+function Referrable(buf::AbstractVector{UInt8}, pos::Integer)
+    FlatBuffers.read(Referrable, buf, pos)
 end
 

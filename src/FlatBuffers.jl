@@ -21,6 +21,8 @@ isstruct(T) = isconcretetype(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
 isunionwithnothing(T) = T.a == Nothing && !(isa(T.b, Union))
 
+file_identifier(T) = "FBJL"
+file_extension(T) = "flatjulia"
 offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
@@ -64,12 +66,12 @@ The object containing the flatbuffer and positional information specific to the 
 The `vtable` containing the offsets for specific members precedes `pos`.
 The actual values in the table follow `pos` offset and size of the vtable.
 
-- `bytes::Vector{UInt8}`: the flatbuffer itself
-- `pos::Int`:  the base position in `bytes` of the table
+- `bytes::AbstractVector{UInt8}`: the flatbuffer itself
+- `pos::Integer`:  the base position in `bytes` of the table
 """
 mutable struct Table{T}
-    bytes::Vector{UInt8}
-    pos::Int
+    bytes::AbstractVector{UInt8}
+    pos::Integer
 end
 
 """
@@ -80,7 +82,7 @@ A Builder constructs byte buffers in a last-first manner for simplicity and
 performance.
 """
 mutable struct Builder{T}
-    bytes::Vector{UInt8}
+    bytes::AbstractVector{UInt8}
     minalign::Int
     vtable::Vector{Int}
 	objectend::Int
@@ -128,7 +130,7 @@ end
 
 include("internals.jl")
 
-function Table(::Type{T}, buffer::Vector{UInt8}, pos::Integer) where {T}
+function Table(::Type{T}, buffer::AbstractVector{UInt8}, pos::Integer) where {T}
     return Table{T}(buffer, pos)
 end
 
@@ -262,7 +264,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     return T(args...)
 end
 
-FlatBuffers.read(::Type{T}, buffer::Vector{UInt8}, pos::Integer) where {T} = FlatBuffers.read(Table(T, buffer, pos))
+FlatBuffers.read(::Type{T}, buffer::AbstractVector{UInt8}, pos::Integer) where {T} = FlatBuffers.read(Table(T, buffer, pos))
 FlatBuffers.read(b::Builder{T}) where {T} = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
 FlatBuffers.read(::Type{T}, bytes) where {T} = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
