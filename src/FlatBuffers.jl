@@ -37,7 +37,7 @@ default(::Type{Vector{T}}) where {T} = T[]
 function default(::Type{T}, i::Integer) where {T}
     TT = T.types[i]
     try
-        return FlatBuffers.default(T, T.types[i], fieldnames(T)[i])
+        return FlatBuffers.default(T, TT, fieldnames(T)[i])
     # catch because Parameters throws an error if there is no
     # default value defined...
     catch
@@ -117,19 +117,19 @@ end
 
 function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
     syms = T.name.names
-    println(io, "vtable start pos: $(hexoffset(vtabstart))")
-    println(io, "vtable size: $(hexoffset(vtabsize))")
+    println(io, "vtable start pos: $(hexoffset(vtabstart - 1))")
+    println(io, "vtable size: $vtabsize")
     i = vtabstart
     x = 1
     for y = 1:length(syms)
-        println(io, stringify(buffer, -1, i, i+1, "[$(syms[x])]"))
+        println(io, stringify(buffer, 0, i, i+1, "[$(syms[x])]"))
         i += 2
         x += 1
     end
     # now we're pointing at data
     println(io, "payload: ")
     while i < length(buffer)
-        println(io, stringify(buffer, -1, i, i+7, ""))
+        println(io, stringify(buffer, 0, i, i+7, ""))
         i += 8
     end
 end
@@ -140,18 +140,12 @@ function Base.show(io::IO, x::Union{Builder{T}, Table{T}}) where {T}
     if isempty(buffer)
         print(io, " (empty flatbuffer)")
     else
-        pos = readbuffer(buffer, 0, Int32)
+        pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, UInt32))
         println(io, "root offset: $(hexoffset(pos))")
-        if x isa Builder
-            vtaboff = readbuffer(buffer, pos, Int32)
-            vtabstart = pos - vtaboff
-            vtabsize = get(buffer, vtabstart, Int16)
-        else
-            vtaboff = get(x, x.pos, Int32)
-            vtabstart = pos - vtaboff
-            vtabsize = get(x, vtabstart, Int16)
-        end
-        showvtable(io, T, buffer, vtabstart + 4, vtabsize)
+        vtaboff = get(x, pos, UInt32)
+        vtabstart = x isa Builder ? (pos - vtaboff + 4) : vtaboff
+        vtabsize = readbuffer(buffer, vtabstart + 1, UInt16)
+        showvtable(io, T, buffer, vtabstart, vtabsize)
     end
 end
 
@@ -273,18 +267,22 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             end
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
             # except in the special case of a union with Nothing and a concrete type
+            nullable = false
             if isa(TT, Union)
                 if isunionwithnothing(TT)
                     TT = TT.b
+                    nullable = true
                 else
                     TT = typeorder(TT, args[end])
                 end
             end
+            println("reading $TT at offset $o $(offsets(T)[i])...")
             if o == 0
-                push!(args, default(T, TT, T.name.names[i]))
+                push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
             else
                 push!(args, getvalue(t, o, TT))
             end
+            println("got $(repr(args[end]))")
         end
     end
 
@@ -420,8 +418,8 @@ function getoffset end
 getoffset(b, arg::Nothing, prev=nothing) = 0
 getoffset(b, arg::T, prev=nothing) where {T <: Scalar} = 0
 getoffset(b, arg::T, prev=nothing) where {T <: Enum} = 0
-getoffset(b, arg::Vector{UInt8}, prev=nothing) = createbytevector(b, arg)
 getoffset(b, arg::AbstractString, prev=nothing) = createstring(b, arg)
+getoffset(b, arg::Vector{UInt8}, prev) = createbytevector(b, arg)
 getoffset(b, arg::Vector{T}, prev) where {T} = buildbuffer!(b, arg, prev)
 
 # structs or table/object
@@ -435,13 +433,18 @@ to the actual data (Arrays, Strings, other tables)
 """
 function putslot! end
 
-putslot!(b, i, arg::T, off, default, prev) where {T <: Scalar} = prependslot!(b, i, arg, T(default))
-putslot!(b, i, arg::T, off, default, prev) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), T(default))
+putslot!(b, i, arg::T, off, default, prev) where {T <: Scalar} = prependslot!(b, i, arg, default)
+putslot!(b, i, arg::T, off, default, prev) where {T <: Enum} = prependslot!(b, i, enumtype(T)(arg), default)
 putslot!(b, i, arg::AbstractString, off, default, prev) = prependoffsetslot!(b, i, off, 0)
 putslot!(b, i, arg::Vector{T}, off, default, prev) where {T} = prependoffsetslot!(b, i, off, 0)
 # structs or table/object
-putslot!(b, i, arg::T, off, default, prev) where {T} =
-    isstruct(T) ? prependstructslot!(b, i, buildbuffer!(b, arg, prev), 0) : prependoffsetslot!(b, i, off, 0)
+function putslot!(b, i, arg::T, off, default, prev) where {T}
+    if isstruct(T)
+        prependstructslot!(b, i, buildbuffer!(b, arg, prev), 0)
+    else
+        prependoffsetslot!(b, i, off, 0)
+    end
+end
 
 function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
     if T <: Array
@@ -454,10 +457,17 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
         for i = 2:numfields
             field = getfield(arg, i)
             prevname = fieldnames(T)[i - 1]
-            if typeof(field) isa Vector && eltype(field) isa Union
-                kwargs[prevname] = FlatBuffers.typeorder.(eltype(field), field)
-            elseif typeof(field) isa Union && !isunionwithnothing(typeof(field))
-                kwargs[prevname] = FlatBuffers.typeorder(typeof(field), field)
+            # hack to make the example work
+            TT = field isa Vector ? eltype(field) : typeof(field)
+            println("TT: $TT")
+            if length(TT.parameters) > 0
+                TT = TT.name.wrapper
+            end
+            if typeof(field) isa Vector && eltype(field) isa Union && !(eltype(field) isa UnionAll)
+                kwargs[prevname] = FlatBuffers.typeorder.(TT, field)
+            elseif T.types[i] isa Union && !isunionwithnothing(T.types[i])
+                t = FlatBuffers.typeorder(T.types[i], TT)
+                kwargs[prevname] = FlatBuffers.typeorder(T.types[i], TT)
             end
         end
         if !isempty(kwargs)
@@ -483,25 +493,20 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             # build a table type
             # check for string/array/table types
             numfields = length(T.types)
-            isdefault = falses(numfields)
             offsets = []
             for i = 1:numfields
-                isdefault[i] = getfieldvalue(arg, i) == default(T, i)
-                o = isdefault[i] ? 0 : getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i))
+                o = getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i))
                 push!(offsets, o)
             end
             # all nested have been written, with offsets in `offsets[]`
             startobject(b, numfields)
             for i = 1:numfields
-                if !isdefault[i]
-                    d = default(T, i)
-                    putslot!(b, i,
-                        getfieldvalue(arg, i),
-                        offsets[i],
-                        d,
-                        getprevfieldvalue(arg, i)
-                    )
-                end
+                putslot!(b, i,
+                    getfieldvalue(arg, i),
+                    offsets[i],
+                    default(T, i),
+                    getprevfieldvalue(arg, i)
+                )
             end
             n = endobject(b)
         end

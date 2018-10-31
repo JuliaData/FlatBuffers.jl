@@ -69,3 +69,12 @@ for testcase in ["test", "python_wire"]
     checkmonster(mon)
     # checkpassthrough(mon)
 end
+
+
+# mon = loadmonsterfile("monsterdata_test.mon")
+mon = Monster{Any_}(;inventory=[1,2,3,4,5])
+b = FlatBuffers.Builder(Monster{Any_})
+FlatBuffers.build!(b, mon)
+bytes = FlatBuffers.bytes(b)
+# newmonster = FlatBuffers.read(Monster{Any_}, bytes)
+

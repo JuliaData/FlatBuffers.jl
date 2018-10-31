@@ -72,6 +72,6 @@ mutable struct Monster
     testf3::Float32
 end
 
-@DEFAULT Monster hp=100 mana=150 color=Blue friendly=false testf=Float32(3.14159) testf2=Float32(3)
+@DEFAULT Monster hp=Int16(100) mana=Int16(150) color=convert(UInt8, Blue) friendly=false testf=Float32(3.14159) testf2=Float32(3)
 
 end # module
