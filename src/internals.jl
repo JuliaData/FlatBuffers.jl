@@ -286,9 +286,14 @@ end
 """
 `finish!` finalizes a buffer, pointing to the given `rootTable`.
 """
-function finish!(b::Builder, rootTable)
+function finish!(b::Builder{T}, rootTable) where {T}
 	assertnotnested(b)
-	prep!(b, b.minalign, sizeof(UInt32))
+    identifier = file_identifier(T)
+    n = length(identifier)
+	prep!(b, b.minalign, sizeof(UInt32) + n)
+    for i = 0:(n-1)
+        prepend!(b, UInt8(identifier[n - i]))
+    end
 	prependoffset!(b, Int32(rootTable))
 	b.finished = true
     return

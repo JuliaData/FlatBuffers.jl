@@ -21,7 +21,7 @@ isstruct(T) = isconcretetype(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
 isunionwithnothing(T) = T.a == Nothing && !(isa(T.b, Union))
 
-file_identifier(T) = "FBJL"
+file_identifier(T) = ""
 file_extension(T) = "flatjulia"
 offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
@@ -92,39 +92,66 @@ mutable struct Builder{T}
 	finished::Bool
 end
 
-function Base.show(io::IO, x::Union{Builder{T},Table{T}}) where {T}
+function hexloc(x)
+    "0x" * lpad("$(string(x-1, base=16)): ", 6, '0')
+end
+
+function hexbyte(z)
+    lpad("$(string(z, base=16))", 2, '0')
+end
+
+function hexoffset(x)
+    "0x$(lpad(string(x, base=16), 4, '0'))"
+end
+
+function stringify(buf, offset, x, y, msg)
+    y = min(y, length(buf))
+    s = hexloc(x - offset)
+    
+    s *= join(hexbyte.(buf[x:y]), " ")
+    if length(msg) > 0
+        s *= " " * msg
+    end
+    s
+end
+
+function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
+    syms = T.name.names
+    println(io, "vtable start pos: $(hexoffset(vtabstart))")
+    println(io, "vtable size: $(hexoffset(vtabsize))")
+    i = vtabstart
+    x = 1
+    for y = 1:length(syms)
+        println(io, stringify(buffer, -1, i, i+1, "[$(syms[x])]"))
+        i += 2
+        x += 1
+    end
+    # now we're pointing at data
+    println(io, "payload: ")
+    while i < length(buffer)
+        println(io, stringify(buffer, -1, i, i+7, ""))
+        i += 8
+    end
+end
+
+function Base.show(io::IO, x::Union{Builder{T}, Table{T}}) where {T}
     println(io, "FlatBuffers.$(typeof(x)): ")
-    buffer = typeof(x) <: Table ? x.bytes : x.bytes[x.head+1:end]
+    buffer = x isa Builder ? x.bytes[x.head+1:end] : x.bytes
     if isempty(buffer)
         print(io, " (empty flatbuffer)")
     else
-        pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, Int32))
-        # print vtable offset
-        syms = T.name.names
-        maxpad = max(length(" vtable rel. start pos: "), maximum(map(x->length(string(x)), syms)))
-
-        stringify(buf, x, y, msg) = replace(string(rpad(string(lpad("$(x): ", 6, ' '),lpad(msg, maxpad, ' ')),maxpad+6,' '),string(map(z->lpad(string(Int(z)), 4, ' '),buf[x:y]))[5:end-1]),'"' => "")
-        println(io, stringify(buffer, 1, 4, " root position: "))
-        vtaboff = readbuffer(buffer, pos, Int32)
-        vtabstart = pos - vtaboff + 5
-
-        println(io, stringify(buffer, 5, 6, " vtable size: "))
-        println(io, stringify(buffer, 7, 8, " data size: "))
-        i = vtabstart
-        x = 1
-        for y = 1:length(syms)
-            println(io, stringify(buffer, i, i+1, "$(syms[x]): "))
-            i += 2
-            x += 1
+        pos = readbuffer(buffer, 0, Int32)
+        println(io, "root offset: $(hexoffset(pos))")
+        if x isa Builder
+            vtaboff = readbuffer(buffer, pos, Int32)
+            vtabstart = pos - vtaboff
+            vtabsize = get(buffer, vtabstart, Int16)
+        else
+            vtaboff = get(x, x.pos, Int32)
+            vtabstart = pos - vtaboff
+            vtabsize = get(x, vtabstart, Int16)
         end
-        # print rel pos. of vtable
-        println(io, stringify(buffer, i, i+3, " vtable rel. start pos: "))
-        i += 4
-        # now we're pointing at data
-        while i < length(buffer)
-            println(io, stringify(buffer, i, i+3, " "))
-            i += 4
-        end
+        showvtable(io, T, buffer, vtabstart + 4, vtabsize)
     end
 end
 
