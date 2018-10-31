@@ -300,7 +300,7 @@ end
     b::A
 end
 @test sizeof(J) == 8
-@test all(fieldnames(J) .== [:a, :_pad_a_J_0, :_pad_a_J_1, :b_A_a])
+@test all(fieldnames(J) .== [:a, :_pad_a_J_0, :_pad_a_J_1, :b_a])
 @test J(1,A(2)) == J(1,A(2))
 
 @STRUCT struct K
@@ -309,5 +309,5 @@ end
     c::J
 end
 @test sizeof(K) == 48
-@test all(fieldnames(K) .== [:a_J_a, :a_J__pad_a_J_0, :a_J__pad__pad_a_J_0_J_0, :a_J__pad_a_J_1, :a_J__pad__pad_a_J_1_J_1, :a_J_b_A_a, :b_I_a, :b_I_b, :b_I__pad_b_I_0, :b_I__pad__pad_b_I_0_I_0, :b_I__pad_b_I_1, :b_I__pad__pad_b_I_1_I_1, :b_I_c, :c_J_a, :c_J__pad_a_J_0, :c_J__pad__pad_a_J_0_J_0, :c_J__pad_a_J_1, :c_J__pad__pad_a_J_1_J_1, :c_J_b_A_a])
+@test all(fieldnames(K) .== [:a_a, :a__pad_a_J_0, :a__pad__pad_a_J_0_J_0, :a__pad_a_J_1, :a__pad__pad_a_J_1_J_1, :a_b_a, :b_a, :b_b, :b__pad_b_I_0, :b__pad__pad_b_I_0_I_0, :b__pad_b_I_1, :b__pad__pad_b_I_1_I_1, :b_c, :c_a, :c__pad_a_J_0, :c__pad__pad_a_J_0_J_0, :c__pad_a_J_1, :c__pad__pad_a_J_1_J_1, :c_b_a])
 @test K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7))) == K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7)))
