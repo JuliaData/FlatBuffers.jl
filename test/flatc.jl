@@ -67,13 +67,6 @@ end
 for testcase in ["test", "python_wire"]
     mon = loadmonsterfile("monsterdata_$testcase.mon")
     checkmonster(mon)
-    # checkpassthrough(mon)
+    checkpassthrough(mon)
 end
-
-
-mon = loadmonsterfile("monsterdata_test.mon")
-b = FlatBuffers.Builder(Monster{Any_})
-FlatBuffers.build!(b, mon)
-bytes = FlatBuffers.bytes(b)
-# newmonster = FlatBuffers.read(Monster{Any_}, bytes)
 

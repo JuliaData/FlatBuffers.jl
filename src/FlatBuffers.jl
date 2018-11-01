@@ -19,7 +19,7 @@ const Scalar = Union{UndefinedType, Bool,
 
 isstruct(T) = isconcretetype(T) && !T.mutable
 isbitstype(T) = fieldcount(T) == 0
-isunionwithnothing(T) = T.a == Nothing && !(isa(T.b, Union))
+isunionwithnothing(T) = T isa Union && T.a == Nothing && !(isa(T.b, Union))
 
 file_identifier(T) = ""
 file_extension(T) = "flatjulia"
@@ -268,13 +268,11 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             # if it's a Union type, use the previous arg to figure out the true type that was serialized
             # except in the special case of a union with Nothing and a concrete type
             nullable = false
-            if isa(TT, Union)
-                if isunionwithnothing(TT)
-                    TT = TT.b
-                    nullable = true
-                else
-                    TT = typeorder(TT, args[end])
-                end
+            if isunionwithnothing(TT)
+                TT = TT.b
+                nullable = true
+            elseif TT isa Union
+                TT = typeorder(TT, args[end])
             end
             if o == 0
                 push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
@@ -492,7 +490,13 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             numfields = length(T.types)
             os = Int[]
             for i = 1:numfields
-                push!(os, getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)))
+                val = getfieldvalue(arg, i)
+                d = default(T, i)
+                if val == d
+                    push!(os, 0)
+                else
+                    push!(os, getoffset(b, val, getprevfieldvalue(arg, i)))
+                end
             end
             # all nested have been written, with offsets in `os[]`
             # don't use slots for the last N members if they are all default
@@ -514,12 +518,16 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
                     i += 1
                     j += 2
                 end
-                putslot!(b, i,
-                    getfieldvalue(arg, field),
-                    os[field],
-                    default(T, field),
-                    getprevfieldvalue(arg, field)
-                )
+                val = getfieldvalue(arg, field)
+                d = default(T, field)
+                if !(isunionwithnothing(T.types[i]) && val == nothing)
+                    putslot!(b, i,
+                        val,
+                        os[field],
+                        d,
+                        getprevfieldvalue(arg, field)
+                    )
+                end
                 field += 1
                 i += 1
             end

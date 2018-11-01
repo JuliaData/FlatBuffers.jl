@@ -240,7 +240,7 @@ end
 function prependoffsetslot!(b::Builder, o::Int, x::T, d::T) where {T}
 	if x != d
 		prependoffset!(b, x)
-		slot!(b, o)
+        slot!(b, o)
 	end
     return
 end
@@ -253,7 +253,7 @@ other data will be written.
 function prependslot!(b::Builder, o::Int, x::T, d::T) where {T}
 	if x != d
 		prepend!(b, x)
-		slot!(b, o)
+        slot!(b, o)
 	end
     return
 end
@@ -278,7 +278,7 @@ end
 `slot!` sets the vtable key `voffset` to the current location in the buffer.
 """
 function slot!(b::Builder, slotnum)
-	b.vtable[slotnum] = offset(b)
+    b.vtable[slotnum] = offset(b)
 end
 
 """
@@ -398,7 +398,6 @@ function writevtable!(b::Builder{T}) where {T}
 				# use 32bit number to assert no overflow:
 				off = objectOffset - b.vtable[i]
 			end
-
 			prepend!(b, Int16(off))
 		end
 
