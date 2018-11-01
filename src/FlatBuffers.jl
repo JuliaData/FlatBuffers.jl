@@ -119,9 +119,9 @@ function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
     syms = T.name.names
     println(io, "vtable start pos: $(hexoffset(vtabstart))")
     println(io, "vtable size: $vtabsize")
-    i = vtabstart
+    i = vtabstart + 4
     x = 1
-    for y = 1:length(syms)
+    while i < (vtabstart + vtabsize)
         println(io, stringify(buffer, 1, i, i+1, "[$(syms[x])]"))
         i += 2
         x += 1
@@ -143,7 +143,6 @@ function Base.show(io::IO, x::Union{Builder{T}, Table{T}}) where {T}
         pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, Int32))
         println(io, "root offset: $(hexoffset(pos))")
         vtaboff = readbuffer(buffer, pos, Int32)
-        # pos -= (x isa Builder ? 1 : 0)
         vtabstart = pos - vtaboff
         vtabsize = readbuffer(buffer, vtabstart, Int16)
         showvtable(io, T, buffer, vtabstart, vtabsize)
@@ -496,15 +495,33 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
                 push!(os, getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)))
             end
             # all nested have been written, with offsets in `os[]`
-            # numslots = Int(offsets(T)[end])
-            startobject(b, numfields)
-            for i = 1:numfields
+            # don't use slots for the last N members if they are all default
+            # also leave slots for deprecated fields
+            i = length(os)
+            while os[i] == 0 && i > 0
+                i -= 1
+            end
+            numslots = div(offsets(T)[i] - 4, 2) + 1
+            startobject(b, numslots)
+            i = 1
+            field = 1
+            while i <= numslots
+                # leave holes for deprecated fields
+                j = 2
+                start = field == 1 ? offsets(T)[1] : offsets(T)[field - 1];
+                while (start + j) < offsets(T)[field]
+                    # empty slot
+                    i += 1
+                    j += 2
+                end
                 putslot!(b, i,
-                    getfieldvalue(arg, i),
-                    os[i],
-                    default(T, i),
-                    getprevfieldvalue(arg, i)
+                    getfieldvalue(arg, field),
+                    os[field],
+                    default(T, field),
+                    getprevfieldvalue(arg, field)
                 )
+                field += 1
+                i += 1
             end
             n = endobject(b)
         end

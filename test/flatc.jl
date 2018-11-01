@@ -72,8 +72,6 @@ end
 
 
 mon = loadmonsterfile("monsterdata_test.mon")
-# mon = Monster{Any_}(;inventory=[1,2,3,4,5])
-mon = Monster{Any_}(;name="kevin")
 b = FlatBuffers.Builder(Monster{Any_})
 FlatBuffers.build!(b, mon)
 bytes = FlatBuffers.bytes(b)

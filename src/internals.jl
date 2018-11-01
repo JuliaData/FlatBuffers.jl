@@ -355,7 +355,7 @@ end
    <SOffsetT: offset to this object's vtable (may be negative)>
    <byte: data>+
 """
-function writevtable!(b::Builder)
+function writevtable!(b::Builder{T}) where {T}
 	# Prepend a zero scalar to the object. Later in this function we'll
 	# write an offset here that points to the object's vtable:
     prepend!(b, Int32(0))
