@@ -61,6 +61,14 @@ function checkpassthrough(monster)
     checkmonster(newmonster)
 end
 
+function checkserialize(monster)
+    io = IOBuffer()
+    FlatBuffers.serialize(io, monster)
+    bytes = take!(io)
+    newmonster = FlatBuffers.deserialize(IOBuffer(bytes), Monster{Any_})
+    checkmonster(newmonster)
+end
+
 @test FlatBuffers.file_identifier(Monster) == "MONS"
 @test FlatBuffers.file_extension(Monster) == "mon"
 
@@ -68,5 +76,6 @@ for testcase in ["test", "python_wire"]
     mon = loadmonsterfile("monsterdata_$testcase.mon")
     checkmonster(mon)
     checkpassthrough(mon)
+    checkserialize(mon)
 end
 

@@ -9,7 +9,7 @@ const Undefined = UndefinedType()
 Serialize `value` to `stream` using the `FlatBuffer` format.
 """
 function serialize(stream::IO, value::T) where {T}
-    write(stream, build!(val))
+    write(stream, bytes(build!(value)))
 end
 
 """
@@ -37,7 +37,7 @@ isbitstype(T) = fieldcount(T) == 0
 isunionwithnothing(T) = T isa Union && T.a == Nothing && !(isa(T.b, Union))
 
 file_identifier(T) = ""
-file_extension(T) = "flatjulia"
+file_extension(T) = ""
 offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
@@ -136,6 +136,7 @@ function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
     println(io, "vtable size: $vtabsize")
     i = vtabstart + 4
     x = 1
+    # TODO: show deprecated fields properly...
     while i < (vtabstart + vtabsize)
         println(io, stringify(buffer, 1, i, i+1, "[$(syms[x])]"))
         i += 2
@@ -524,7 +525,7 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             while i <= numslots
                 # leave holes for deprecated fields
                 j = 2
-                start = field == 1 ? offsets(T)[1] : offsets(T)[field - 1];
+                start = field == 1 ? offsets(T)[1] : offsets(T)[field - 1]
                 while (start + j) < offsets(T)[field]
                     # empty slot
                     i += 1

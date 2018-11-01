@@ -32,25 +32,25 @@ end
 
 #### Serialization
 `FlatBuffers` provides the following functions for reading and writing flatbuffers.
-
 ```
 serialize(stream::IO, value::T) 
 deserialize(stream::IO, ::Type{T})
 ```
-
-Here is how to read and write the above example using `FlatBuffers`.
+Here is an example showing how to use them to serialize the example type above.
 ```julia
-using FlatBuffers, Example # the schema module we defined above
+import FlatBuffers, Example
 
-val = Example.SimpleType(2) # create an instance of our type
+# create an instance of our type
+val = Example.SimpleType(2)
 
-flatbuffer = FlatBuffers.build!(val) # start and build a flatbuffer for our SimpleType
-val2 = FlatBuffers.read(flatbuffer) # now we can deserialize the value from our flatbuffer, `val2` == `val`
-flatbytes = FlatBuffers.bytes(flatbuffer) # get the serialized bytes of the flatbuffer
-val3 = Flatbuffers.read(Example.SimpleType, flatbytes) # now we can deserialize directly from flatbytes
+# serialize it to example.bin
+open("example.bin", "w") do f FlatBuffers.serialize(f, val) end
+
+# read the value back again from file
+val2 = open("example.bin", "r") do f FlatBuffers.deserialize(f, Example.SimpleType) end
 ```
-
-This package provides the following types and methods:
+In addition, this package provides the following types and methods, which are useful
+when inspecting and constructing flatbuffers:
 * `FlatBuffers.Table{T}`: type for deserializing a Julia type `T` from a flatbuffer
 * `FlatBuffers.Builder{T}`: type for serializing a Julia type `T` to a flatbuffer
 * `FlatBuffers.read`: performs the actual deserializing on a `FlatBuffer.Table`
