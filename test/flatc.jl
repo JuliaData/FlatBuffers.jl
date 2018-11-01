@@ -49,7 +49,7 @@ function checkmonster(monster)
     @test sum([test0.a, test0.b, test1.a, test1.b]) == 100
 
     @test monster.testarrayofstring == ["test1", "test2"]
-    @test monster.testarrayoftables == []
+    @test monster.testarrayoftables == nothing
     @test monster.testf == 3.14159f0
 end
 
@@ -71,8 +71,9 @@ for testcase in ["test", "python_wire"]
 end
 
 
-# mon = loadmonsterfile("monsterdata_test.mon")
-mon = Monster{Any_}(;inventory=[1,2,3,4,5])
+mon = loadmonsterfile("monsterdata_test.mon")
+# mon = Monster{Any_}(;inventory=[1,2,3,4,5])
+mon = Monster{Any_}(;name="kevin")
 b = FlatBuffers.Builder(Monster{Any_})
 FlatBuffers.build!(b, mon)
 bytes = FlatBuffers.bytes(b)

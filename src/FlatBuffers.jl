@@ -28,9 +28,9 @@ offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
 default(::Type{T}) where {T <: Scalar} = zero(T)
-default(::Type{T}) where {T <: AbstractString} = ""
+default(::Type{T}) where {T <: AbstractString} = nothing
 default(::Type{T}) where {T <: Enum} = enumtype(T)(T(0))
-default(::Type{Vector{T}}) where {T} = T[]
+default(::Type{Vector{T}}) where {T} = nothing
 
 # attempt to call default constructors for the type,
 # use above methods as fallback
@@ -106,7 +106,7 @@ end
 
 function stringify(buf, offset, x, y, msg)
     y = min(y, length(buf))
-    s = hexloc(x - offset)
+    s = hexloc(x + offset)
     
     s *= join(hexbyte.(buf[x:y]), " ")
     if length(msg) > 0
@@ -117,19 +117,19 @@ end
 
 function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
     syms = T.name.names
-    println(io, "vtable start pos: $(hexoffset(vtabstart - 1))")
+    println(io, "vtable start pos: $(hexoffset(vtabstart))")
     println(io, "vtable size: $vtabsize")
     i = vtabstart
     x = 1
     for y = 1:length(syms)
-        println(io, stringify(buffer, 0, i, i+1, "[$(syms[x])]"))
+        println(io, stringify(buffer, 1, i, i+1, "[$(syms[x])]"))
         i += 2
         x += 1
     end
     # now we're pointing at data
     println(io, "payload: ")
     while i < length(buffer)
-        println(io, stringify(buffer, 0, i, i+7, ""))
+        println(io, stringify(buffer, 1, i, i+7, ""))
         i += 8
     end
 end
@@ -140,11 +140,12 @@ function Base.show(io::IO, x::Union{Builder{T}, Table{T}}) where {T}
     if isempty(buffer)
         print(io, " (empty flatbuffer)")
     else
-        pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, UInt32))
+        pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, Int32))
         println(io, "root offset: $(hexoffset(pos))")
-        vtaboff = get(x, pos, UInt32)
-        vtabstart = x isa Builder ? (pos - vtaboff + 4) : vtaboff
-        vtabsize = readbuffer(buffer, vtabstart + 1, UInt16)
+        vtaboff = readbuffer(buffer, pos, Int32)
+        # pos -= (x isa Builder ? 1 : 0)
+        vtabstart = pos - vtaboff
+        vtabsize = readbuffer(buffer, vtabstart, Int16)
         showvtable(io, T, buffer, vtabstart, vtabsize)
     end
 end
@@ -276,13 +277,11 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
                     TT = typeorder(TT, args[end])
                 end
             end
-            println("reading $TT at offset $o $(offsets(T)[i])...")
             if o == 0
                 push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
             else
                 push!(args, getvalue(t, o, TT))
             end
-            println("got $(repr(args[end]))")
         end
     end
 
@@ -459,7 +458,6 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             prevname = fieldnames(T)[i - 1]
             # hack to make the example work
             TT = field isa Vector ? eltype(field) : typeof(field)
-            println("TT: $TT")
             if length(TT.parameters) > 0
                 TT = TT.name.wrapper
             end
@@ -493,17 +491,17 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
             # build a table type
             # check for string/array/table types
             numfields = length(T.types)
-            offsets = []
+            os = Int[]
             for i = 1:numfields
-                o = getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i))
-                push!(offsets, o)
+                push!(os, getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)))
             end
-            # all nested have been written, with offsets in `offsets[]`
+            # all nested have been written, with offsets in `os[]`
+            # numslots = Int(offsets(T)[end])
             startobject(b, numfields)
             for i = 1:numfields
                 putslot!(b, i,
                     getfieldvalue(arg, i),
-                    offsets[i],
+                    os[i],
                     default(T, i),
                     getprevfieldvalue(arg, i)
                 )

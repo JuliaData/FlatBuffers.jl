@@ -12,20 +12,20 @@ FlatBuffers.@with_kw mutable struct Monster{T}
     pos::Union{Vec3, Nothing} = nothing
     mana::Int16 = 150
     hp::Int16 = 100
-    name::String = ""
-    inventory::Vector{UInt8} = []
+    name::Union{String, Nothing} = nothing
+    inventory::Union{Vector{UInt8}, Nothing} = nothing
     color::Int8 = 8
     test_type::UInt8 = 0
     test::T = nothing
-    test4::Vector{Test} = []
-    testarrayofstring::Vector{String} = []
+    test4::Union{Vector{Test}, Nothing} = nothing
+    testarrayofstring::Union{Vector{String}, Nothing} = nothing
 #=
 #  an example documentation comment: this will end up in the generated code
 #  multiline too
 =#
-    testarrayoftables::Vector{Monster{T}} = []
+    testarrayoftables::Union{Vector{Monster{T}}, Nothing} = nothing
     enemy::Union{Monster{T}, Nothing} = nothing
-    testnestedflatbuffer::Vector{UInt8} = []
+    testnestedflatbuffer::Union{Vector{UInt8}, Nothing} = nothing
     testempty::Union{Stat, Nothing} = nothing
     testbool::Bool = false
     testhashs32_fnv1::Int32 = 0
@@ -36,25 +36,25 @@ FlatBuffers.@with_kw mutable struct Monster{T}
     testhashu32_fnv1a::UInt32 = 0
     testhashs64_fnv1a::Int64 = 0
     testhashu64_fnv1a::UInt64 = 0
-    testarrayofbools::Vector{Bool} = []
+    testarrayofbools::Union{Vector{Bool}, Nothing} = nothing
     testf::Float32 = 3.14159
     testf2::Float32 = 3.0
     testf3::Float32 = 0.0
-    testarrayofstring2::Vector{String} = []
-    testarrayofsortedstruct::Vector{Ability} = []
-    flex::Vector{UInt8} = []
-    test5::Vector{Test} = []
-    vector_of_longs::Vector{Int64} = []
-    vector_of_doubles::Vector{Float64} = []
+    testarrayofstring2::Union{Vector{String}, Nothing} = nothing
+    testarrayofsortedstruct::Union{Vector{Ability}, Nothing} = nothing
+    flex::Union{Vector{UInt8}, Nothing} = nothing
+    test5::Union{Vector{Test}, Nothing} = nothing
+    vector_of_longs::Union{Vector{Int64}, Nothing} = nothing
+    vector_of_doubles::Union{Vector{Float64}, Nothing} = nothing
     parent_namespace_test::Union{InParentNamespace, Nothing} = nothing
-    vector_of_referrables::Vector{Referrable} = []
+    vector_of_referrables::Union{Vector{Referrable}, Nothing} = nothing
     single_weak_reference::UInt64 = 0
-    vector_of_weak_references::Vector{UInt64} = []
-    vector_of_strong_referrables::Vector{Referrable} = []
+    vector_of_weak_references::Union{Vector{UInt64}, Nothing} = nothing
+    vector_of_strong_referrables::Union{Vector{Referrable}, Nothing} = nothing
     co_owning_reference::UInt64 = 0
-    vector_of_co_owning_references::Vector{UInt64} = []
+    vector_of_co_owning_references::Union{Vector{UInt64}, Nothing} = nothing
     non_owning_reference::UInt64 = 0
-    vector_of_non_owning_references::Vector{UInt64} = []
+    vector_of_non_owning_references::Union{Vector{UInt64}, Nothing} = nothing
 end
 FlatBuffers.@ALIGN(Monster, 1)
 FlatBuffers.offsets(::Type{T}) where {T<:Monster} = [

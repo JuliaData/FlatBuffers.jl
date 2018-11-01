@@ -99,10 +99,10 @@ function finishedbytes(b::Builder)
     return b.bytes[b.head+1:end]
 end
 
-function startobject(b::Builder, numfields)
+function startobject(b::Builder, numslots)
     assertnotnested(b)
     b.nested = true
-    b.vtable = zeros(Int, numfields)
+    b.vtable = zeros(Int, numslots)
     b.objectend = offset(b)
     b.minalign = 1
     return b
@@ -197,7 +197,6 @@ function createstring(b::Builder, s::AbstractString)
 	assertnotnested(b)
 	b.nested = true
     s = codeunits(s)
-
 	prep!(b, sizeof(UInt32), length(s) + 1)
     place!(b, UInt8(0))
 
@@ -205,7 +204,6 @@ function createstring(b::Builder, s::AbstractString)
 
 	b.head -= l
     copyto!(b.bytes, b.head+1, s, 1, l)
-
 	return endvector(b, length(s))
 end
 
@@ -401,7 +399,7 @@ function writevtable!(b::Builder)
 				off = objectOffset - b.vtable[i]
 			end
 
-			prepend!(b, off)
+			prepend!(b, Int16(off))
 		end
 
 		# The two metadata fields are written last.
