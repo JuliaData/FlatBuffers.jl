@@ -29,7 +29,7 @@ FlatBuffers.build!(b, y)
 ybytes = FlatBuffers.bytes(b)
 
 # check that we save bytes with default integer values
-@test length(ybytes) == length(xbytes) + 4
+@test length(ybytes) > length(xbytes)
 
 @test y.answer == x.answer
 @test y.question == x.question

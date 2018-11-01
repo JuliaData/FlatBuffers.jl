@@ -54,7 +54,7 @@ end
 inst2 = TestInt8I(2)
 
 mutable struct TestInt8A
-    x::Vector{Int8}
+    x::Union{Nothing, Vector{Int8}}
 end
 
 inst3 = TestInt8A([1,2,3])
@@ -69,7 +69,7 @@ inst3_2 = FlatBuffers.read(t)
 mutable struct TestMixT
     x::Int8
     y::String
-    z::Vector{Int8}
+    z::Union{Nothing, Vector{Int8}}
 end
 
 inst4 = TestMixT(10,"singin tooralli ooralli addity",[1,2,3])

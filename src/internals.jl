@@ -238,6 +238,7 @@ function prependoffset!(b::Builder, off)
 end
 
 function prependoffsetslot!(b::Builder, o::Int, x::T, d::T) where {T}
+
 	if x != d
 		prependoffset!(b, x)
         slot!(b, o)
