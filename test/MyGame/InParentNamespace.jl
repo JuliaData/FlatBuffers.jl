@@ -8,7 +8,5 @@ mutable struct InParentNamespace
 end
 FlatBuffers.@ALIGN(InParentNamespace, 1)
 
-function InParentNamespace(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(InParentNamespace, buf, pos)
-end
-
+InParentNamespace(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(InParentNamespace, buf, pos)
+InParentNamespace(io::IO) = FlatBuffers.deserialize(io, InParentNamespace)

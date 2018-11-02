@@ -14,7 +14,5 @@ import FlatBuffers
 end
 FlatBuffers.@ALIGN(Vec3, 16)
 
-function Vec3(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(Vec3, buf, pos)
-end
-
+Vec3(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Vec3, buf, pos)
+Vec3(io::IO) = FlatBuffers.deserialize(io, Vec3)

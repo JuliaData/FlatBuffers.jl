@@ -19,13 +19,11 @@ FlatBuffers.@with_kw mutable struct TypeAliases
     vf64::Union{Vector{Float64}, Nothing} = nothing
 end
 FlatBuffers.@ALIGN(TypeAliases, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:TypeAliases} = [
+FlatBuffers.slot_offsets(::Type{T}) where {T<:TypeAliases} = [
     0x00000004, 0x00000006, 0x00000008, 0x0000000A, 
     0x0000000C, 0x0000000E, 0x00000010, 0x00000012, 
     0x00000014, 0x00000016, 0x00000018, 0x0000001A
 ]
 
-function TypeAliases(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(TypeAliases, buf, pos)
-end
-
+TypeAliases(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(TypeAliases, buf, pos)
+TypeAliases(io::IO) = FlatBuffers.deserialize(io, TypeAliases)

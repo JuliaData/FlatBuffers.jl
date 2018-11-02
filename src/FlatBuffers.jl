@@ -38,7 +38,7 @@ isunionwithnothing(T) = T isa Union && T.a == Nothing && !(isa(T.b, Union))
 
 file_identifier(T) = ""
 file_extension(T) = ""
-offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
+slot_offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
 default(::Type{UndefinedType}) = Undefined
@@ -108,56 +108,79 @@ mutable struct Builder{T}
 end
 
 function hexloc(x)
-    "0x" * lpad("$(string(x-1, base=16)): ", 6, '0')
+    "0x" * lpad("$(string(x-1, base=16)) ", 6, '0')
 end
 
-function hexbyte(z)
-    lpad("$(string(z, base=16))", 2, '0')
+function hexbyte(io, z)
+    printstyled(io, lpad("$(string(z, base=16)) ", 3, '0'), color=Int(z))
 end
 
 function hexoffset(x)
     "0x$(lpad(string(x, base=16), 4, '0'))"
 end
 
-function stringify(buf, offset, x, y, msg)
+function stringify(io, buf, offset, x, y, msg="", msgcolor=:blue)
     y = min(y, length(buf))
-    s = hexloc(x + offset)
-    
-    s *= join(hexbyte.(buf[x:y]), " ")
-    if length(msg) > 0
-        s *= " " * msg
+    printstyled(io, hexloc(x + offset), color=:blue)
+    for i = x:y
+        hexbyte(io, buf[i])
     end
-    s
+    if length(msg) > 0
+        printstyled(io, " " * msg, color=msgcolor)
+    end
+    println(io)
 end
 
 function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
     syms = T.name.names
-    println(io, "vtable start pos: $(hexoffset(vtabstart))")
-    println(io, "vtable size: $vtabsize")
+    printstyled(io, "vtable start pos: $(hexoffset(vtabstart))\n", color=:green)
+    printstyled(io, "vtable size: $vtabsize\n", color=:green)
     i = vtabstart + 4
-    x = 1
-    # TODO: show deprecated fields properly...
-    while i < (vtabstart + vtabsize)
-        println(io, stringify(buffer, 1, i, i+1, "[$(syms[x])]"))
+    numslots = div(slot_offsets(T)[i] - 4, 2) + 1
+    field = 1
+    slot = 1
+    numfields = length(T.types)
+    while slot <= numslots
+        # leave holes for deprecated fields
+        j = 2
+        start = field == 1 ? slot_offsets(T)[1] : slot_offsets(T)[field - 1]
+        while (start + j) < slot_offsets(T)[field]
+            # empty slot
+            stringify(io, buffer, 1, i, i+1, "[deprecated field]", :red)
+            slot += 1
+            j += 2
+            i += 2
+            if (i - vtabstart) > vtabsize
+                break
+            end
+        end
+        if (i - vtabstart) > vtabsize
+            break
+        end
+        stringify(io, buffer, 1, i, i+1, "[$(fieldnames(T)[field])]")
+        slot += 1
+        field += 1
         i += 2
-        x += 1
+        if (i - vtabstart) > vtabsize
+            break
+        end
     end
     # now we're pointing at data
-    println(io, "payload: ")
+    printstyled(io, "payload:\n", color=:green)
     while i < length(buffer)
-        println(io, stringify(buffer, 1, i, i+7, ""))
+        stringify(io, buffer, 1, i, i+7, "")
         i += 8
     end
 end
 
 function Base.show(io::IO, x::Union{Builder{T}, Table{T}}) where {T}
-    println(io, "FlatBuffers.$(typeof(x)): ")
+    printstyled(io, "FlatBuffers.$(typeof(x)):\n", color=:green)
     buffer = x isa Builder ? x.bytes[x.head+1:end] : x.bytes
     if isempty(buffer)
-        print(io, " (empty flatbuffer)")
+        printstyled(io, " (empty flatbuffer)", color=:red)
     else
         pos = Int(typeof(x) <: Table ? x.pos : readbuffer(buffer, 0, Int32))
-        println(io, "root offset: $(hexoffset(pos))")
+        printstyled(io, "root offset: $(hexoffset(pos))\n", color=:green)
         vtaboff = readbuffer(buffer, pos, Int32)
         vtabstart = pos - vtaboff
         vtabsize = readbuffer(buffer, vtabstart, Int16)
@@ -268,7 +291,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
     numfields = length(T.types)
     for i = 1:numfields
         TT = T.types[i]
-        o = offset(t, offsets(T)[i])
+        o = offset(t, slot_offsets(T)[i])
         # if it's a vector of Unions, use the previous field to figure out the types of all the elements
         if TT <: AbstractVector && isa(eltype(TT), Union)
             types = typeorder.(eltype(TT), args[end])
@@ -305,6 +328,9 @@ FlatBuffers.read(::Type{T}, buffer::AbstractVector{UInt8}, pos::Integer) where {
 FlatBuffers.read(b::Builder{T}) where {T} = FlatBuffers.read(Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32)))
 # assume `bytes` is a pure flatbuffer buffer where we can read the root position at the beginning
 FlatBuffers.read(::Type{T}, bytes) where {T} = FlatBuffers.read(T, bytes, read(IOBuffer(bytes), Int32))
+
+has_identifier(::Type{T}, bytes) where {T} = length(bytes) >= 8 && String(bytes[5:8]) == FlatBuffers.file_identifier(T)
+root_type(::Type{T}) where {T} = false
 
 """
     flat_bytes = bytes(b)
@@ -518,15 +544,15 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
                 i -= 1
                 isdefault = getfieldvalue(arg, i) == default(T, i)
             end
-            numslots = div(offsets(T)[i] - 4, 2) + 1
+            numslots = div(slot_offsets(T)[i] - 4, 2) + 1
             startobject(b, numslots)
             i = 1
             field = 1
             while i <= numslots
                 # leave holes for deprecated fields
                 j = 2
-                start = field == 1 ? offsets(T)[1] : offsets(T)[field - 1]
-                while (start + j) < offsets(T)[field]
+                start = field == 1 ? slot_offsets(T)[1] : slot_offsets(T)[field - 1]
+                while (start + j) < slot_offsets(T)[field]
                     # empty slot
                     i += 1
                     j += 2

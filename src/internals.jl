@@ -287,12 +287,12 @@ end
 """
 function finish!(b::Builder{T}, rootTable) where {T}
 	assertnotnested(b)
- #    identifier = file_identifier(T)
- #    n = length(identifier)
-     prep!(b, b.minalign, sizeof(UInt32))
- #    for i = 0:(n-1)
- #        prepend!(b, UInt8(identifier[n - i]))
- #    end
+    identifier = file_identifier(T)
+    n = length(identifier)
+    prep!(b, b.minalign, sizeof(UInt32))
+    for i = 0:(n-1)
+        prepend!(b, UInt8(identifier[n - i]))
+    end
 	prependoffset!(b, Int32(rootTable))
 	b.finished = true
     return

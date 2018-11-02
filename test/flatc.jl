@@ -15,8 +15,7 @@ import .MyGame.Example.TestSimpleTableWithEnum
 FlatBuffers.typeorder(::Type{Any_}, i::Integer) = [Nothing, Monster{Any_}, TestSimpleTableWithEnum, Example2.Monster][i+1]
 
 function loadmonsterfile(filename)
-    mon = open(joinpath(@__DIR__, filename), "r") do f read(f) end
-    return FlatBuffers.read(Monster{Any_}, mon)
+    open(joinpath(@__DIR__, filename), "r") do f Monster{Any_}(f) end
 end
 
 function checkmonster(monster)
@@ -57,6 +56,7 @@ function checkpassthrough(monster)
     b = FlatBuffers.Builder(Monster{Any_})
     FlatBuffers.build!(b, monster)
     bytes = FlatBuffers.bytes(b)
+    @test FlatBuffers.has_identifier(Monster{Any_}, bytes)
     newmonster = FlatBuffers.read(Monster{Any_}, bytes)
     checkmonster(newmonster)
 end
@@ -69,6 +69,7 @@ function checkserialize(monster)
     checkmonster(newmonster)
 end
 
+@test FlatBuffers.root_type(Monster) == true
 @test FlatBuffers.file_identifier(Monster) == "MONS"
 @test FlatBuffers.file_extension(Monster) == "mon"
 
@@ -78,4 +79,13 @@ for testcase in ["test", "python_wire"]
     checkpassthrough(mon)
     checkserialize(mon)
 end
+
+# test printing
+mon = loadmonsterfile("monsterdata_test.mon")
+b = FlatBuffers.Builder(Monster{Any_})
+FlatBuffers.build!(b, mon)
+io = IOBuffer()
+show(io, b)
+output = String(take!(io))
+@test occursin("deprecated field", split(output, "\n")[9])
 

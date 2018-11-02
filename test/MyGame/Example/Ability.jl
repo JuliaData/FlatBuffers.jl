@@ -10,7 +10,5 @@ import FlatBuffers
 end
 FlatBuffers.@ALIGN(Ability, 4)
 
-function Ability(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(Ability, buf, pos)
-end
-
+Ability(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Ability, buf, pos)
+Ability(io::IO) = FlatBuffers.deserialize(io, Ability)

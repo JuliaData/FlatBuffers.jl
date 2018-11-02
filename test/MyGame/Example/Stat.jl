@@ -10,11 +10,9 @@ FlatBuffers.@with_kw mutable struct Stat
     count::UInt16 = 0
 end
 FlatBuffers.@ALIGN(Stat, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:Stat} = [
+FlatBuffers.slot_offsets(::Type{T}) where {T<:Stat} = [
     0x00000004, 0x00000006, 0x00000008
 ]
 
-function Stat(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(Stat, buf, pos)
-end
-
+Stat(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Stat, buf, pos)
+Stat(io::IO) = FlatBuffers.deserialize(io, Stat)

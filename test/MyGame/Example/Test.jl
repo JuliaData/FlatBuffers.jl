@@ -10,7 +10,5 @@ import FlatBuffers
 end
 FlatBuffers.@ALIGN(Test, 2)
 
-function Test(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(Test, buf, pos)
-end
-
+Test(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Test, buf, pos)
+Test(io::IO) = FlatBuffers.deserialize(io, Test)

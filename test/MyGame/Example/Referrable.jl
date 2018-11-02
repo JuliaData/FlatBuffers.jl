@@ -8,11 +8,9 @@ FlatBuffers.@with_kw mutable struct Referrable
     id::UInt64 = 0
 end
 FlatBuffers.@ALIGN(Referrable, 1)
-FlatBuffers.offsets(::Type{T}) where {T<:Referrable} = [
+FlatBuffers.slot_offsets(::Type{T}) where {T<:Referrable} = [
     0x00000004
 ]
 
-function Referrable(buf::AbstractVector{UInt8}, pos::Integer)
-    FlatBuffers.read(Referrable, buf, pos)
-end
-
+Referrable(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Referrable, buf, pos)
+Referrable(io::IO) = FlatBuffers.deserialize(io, Referrable)
