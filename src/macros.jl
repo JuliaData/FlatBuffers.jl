@@ -16,6 +16,7 @@ macro UNION(T, TT)
 		const $T = $(Expr(:curly, :Union, TT.args...))
 		FlatBuffers.typeorder(::Type{$T}, ::Type{TT}) where {TT} = FlatBuffers.indexof(TT, $TT)
 		FlatBuffers.typeorder(::Type{$T}, i::Integer) = ($TT)[i+1]
+		FlatBuffers.isunionwithnothing(::Type{$T}) = false
 	end)
 end
 

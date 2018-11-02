@@ -2,7 +2,7 @@
 
 # module: Example
 
-@enum Color begin
+@enum Color::Int8 begin
     ColorRed = 1
     ColorGreen = 2
     ColorBlue = 8

@@ -8,5 +8,5 @@ mutable struct Monster
 end
 FlatBuffers.@ALIGN(Monster, 1)
 
-Monster(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Monster, buf, pos)
+Monster(buf::AbstractVector{UInt8}) = FlatBuffers.read(Monster, buf)
 Monster(io::IO) = FlatBuffers.deserialize(io, Monster)

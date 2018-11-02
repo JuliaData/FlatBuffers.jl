@@ -14,5 +14,5 @@ FlatBuffers.slot_offsets(::Type{T}) where {T<:Stat} = [
     0x00000004, 0x00000006, 0x00000008
 ]
 
-Stat(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Stat, buf, pos)
+Stat(buf::AbstractVector{UInt8}) = FlatBuffers.read(Stat, buf)
 Stat(io::IO) = FlatBuffers.deserialize(io, Stat)

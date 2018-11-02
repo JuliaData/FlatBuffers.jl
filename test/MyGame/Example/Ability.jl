@@ -10,5 +10,5 @@ FlatBuffers.@STRUCT struct Ability
 end
 FlatBuffers.@ALIGN(Ability, 4)
 
-Ability(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Ability, buf, pos)
+Ability(buf::AbstractVector{UInt8}) = FlatBuffers.read(Ability, buf)
 Ability(io::IO) = FlatBuffers.deserialize(io, Ability)

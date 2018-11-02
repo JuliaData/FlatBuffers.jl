@@ -9,8 +9,10 @@ module Example
     include("Stat.jl")
     include("Ability.jl")
     include("Referrable.jl")
-    include("Monster.jl")
     include("TestSimpleTableWithEnum.jl")
+    # include("AnyUniqueAliases.jl")
+    # include("AnyAmbiguousAliases.jl")
+    include("Monster.jl")
     include("Any_.jl")
     include("TypeAliases.jl")
 end

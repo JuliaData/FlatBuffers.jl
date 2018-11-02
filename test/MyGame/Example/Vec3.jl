@@ -9,10 +9,10 @@ FlatBuffers.@STRUCT struct Vec3
     y::Float32
     z::Float32
     test1::Float64
-    test2::Int8
+    test2::Color
     test3::Test
 end
 FlatBuffers.@ALIGN(Vec3, 16)
 
-Vec3(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Vec3, buf, pos)
+Vec3(buf::AbstractVector{UInt8}) = FlatBuffers.read(Vec3, buf)
 Vec3(io::IO) = FlatBuffers.deserialize(io, Vec3)

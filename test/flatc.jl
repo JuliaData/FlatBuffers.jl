@@ -29,7 +29,7 @@ function checkmonster(monster)
     @test vec.y == 2.0
     @test vec.z == 3.0
     @test vec.test1 == 3.0
-    @test vec.test2 == 2
+    @test vec.test2 == MyGame.Example.ColorGreen
     @test vec.test3_a == 5
     @test vec.test3_b == 6
 

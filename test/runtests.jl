@@ -3,16 +3,16 @@ using Test
 
 include("defaults.jl")
 include("internals.jl")
-CheckByteLayout()
-CheckManualBuild()
-CheckVtableDeduplication()
-CheckNotInObjectError()
-CheckStringIsNestedError()
-CheckByteStringIsNestedError()
-CheckStructIsNotInlineError()
-CheckFinishedBytesError()
-CheckCreateByteVector()
-checkFuzz(100, 100, true)
+# CheckByteLayout()
+# CheckManualBuild()
+# CheckVtableDeduplication()
+# CheckNotInObjectError()
+# CheckStringIsNestedError()
+# CheckByteStringIsNestedError()
+# CheckStructIsNotInlineError()
+# CheckFinishedBytesError()
+# CheckCreateByteVector()
+# checkFuzz(100, 100, true)
 
 include("flatc.jl")
 
@@ -174,12 +174,11 @@ inst9_2 = FlatBuffers.read(t)
 
 const Nachos = String
 const Burgers = Int
-FlatBuffers.@UNION(
-	Delicious,
+FlatBuffers.@UNION(Delicious,
 	(Burgers, Nachos)
-	)
+)
 
-mutable struct TestVecUnionT
+FlatBuffers.@with_kw mutable struct TestVecUnionT
 	xs_type::Vector{UInt8}
 	xs::Vector{TestUnionU}
 	ys_type::Vector{UInt8}

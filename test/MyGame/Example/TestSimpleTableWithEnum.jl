@@ -5,12 +5,12 @@
 import FlatBuffers
 
 FlatBuffers.@with_kw mutable struct TestSimpleTableWithEnum
-    color::Int8 = 2
+    color::Color = 2
 end
 FlatBuffers.@ALIGN(TestSimpleTableWithEnum, 1)
 FlatBuffers.slot_offsets(::Type{T}) where {T<:TestSimpleTableWithEnum} = [
     0x00000004
 ]
 
-TestSimpleTableWithEnum(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(TestSimpleTableWithEnum, buf, pos)
+TestSimpleTableWithEnum(buf::AbstractVector{UInt8}) = FlatBuffers.read(TestSimpleTableWithEnum, buf)
 TestSimpleTableWithEnum(io::IO) = FlatBuffers.deserialize(io, TestSimpleTableWithEnum)

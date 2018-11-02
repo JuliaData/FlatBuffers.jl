@@ -237,9 +237,8 @@ function prependoffset!(b::Builder, off)
 	return
 end
 
-function prependoffsetslot!(b::Builder, o::Int, x::T, d::T) where {T}
-
-	if x != d
+function prependoffsetslot!(b::Builder, o::Int, x::T, d) where {T}
+	if x != T(d)
 		prependoffset!(b, x)
 		slot!(b, o)
 	end
@@ -251,8 +250,8 @@ end
 If value `x` equals default `d`, then the slot will be set to zero and no
 other data will be written.
 """
-function prependslot!(b::Builder, o::Int, x::T, d::T) where {T}
-	if x != d
+function prependslot!(b::Builder, o::Int, x::T, d) where {T}
+	if x != T(d)
 		prepend!(b, x)
 		slot!(b, o)
 	end

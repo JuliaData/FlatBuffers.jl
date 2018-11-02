@@ -10,5 +10,5 @@ FlatBuffers.@STRUCT struct Test
 end
 FlatBuffers.@ALIGN(Test, 2)
 
-Test(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Test, buf, pos)
+Test(buf::AbstractVector{UInt8}) = FlatBuffers.read(Test, buf)
 Test(io::IO) = FlatBuffers.deserialize(io, Test)

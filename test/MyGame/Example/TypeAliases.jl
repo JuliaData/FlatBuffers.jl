@@ -25,5 +25,5 @@ FlatBuffers.slot_offsets(::Type{T}) where {T<:TypeAliases} = [
     0x00000014, 0x00000016, 0x00000018, 0x0000001A
 ]
 
-TypeAliases(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(TypeAliases, buf, pos)
+TypeAliases(buf::AbstractVector{UInt8}) = FlatBuffers.read(TypeAliases, buf)
 TypeAliases(io::IO) = FlatBuffers.deserialize(io, TypeAliases)

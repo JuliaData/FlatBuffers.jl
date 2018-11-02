@@ -500,14 +500,15 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
 			if :parameters in propertynames(TT) && length(TT.parameters) > 0
 				TT = TT.name.wrapper
 			end
-			if typeof(field) isa Vector && eltype(field) isa Union && !(eltype(field) isa UnionAll)
-				kwargs[prevname] = FlatBuffers.typeorder.(TT, field)
-			elseif T.types[i] isa Union && !isunionwithnothing(T.types[i])
-				t = FlatBuffers.typeorder(T.types[i], TT)
+			if field isa Vector && eltype(field) isa Union && !(eltype(field) isa UnionAll)
+				kwargs[prevname] = [FlatBuffers.typeorder(TT, typeof(x)) for x in field]
+			elseif (T.types[i] isa Union && !isunionwithnothing(T.types[i]))
 				kwargs[prevname] = FlatBuffers.typeorder(T.types[i], TT)
 			end
 		end
 		if !isempty(kwargs)
+			# reconstruct it so the types before the fields
+			# are populated correctly
 			arg = Parameters.reconstruct(arg; kwargs...)
 		end
 		if isstruct(T)
@@ -559,7 +560,7 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
 				end
 				val = getfieldvalue(arg, field)
 				d = default(T, field)
-				if !(isunionwithnothing(T.types[i]) && val == nothing)
+				if !(isunionwithnothing(T.types[field]) && val == nothing)
 					putslot!(b, i,
 						val,
 						os[field],

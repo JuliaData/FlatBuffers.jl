@@ -12,5 +12,5 @@ FlatBuffers.slot_offsets(::Type{T}) where {T<:Referrable} = [
     0x00000004
 ]
 
-Referrable(buf::AbstractVector{UInt8}, pos::Integer=0) = FlatBuffers.read(Referrable, buf, pos)
+Referrable(buf::AbstractVector{UInt8}) = FlatBuffers.read(Referrable, buf)
 Referrable(io::IO) = FlatBuffers.deserialize(io, Referrable)
