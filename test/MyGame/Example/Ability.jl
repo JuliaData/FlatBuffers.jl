@@ -4,7 +4,7 @@
 
 import FlatBuffers
 
-@FlatBuffers.STRUCT struct Ability
+FlatBuffers.@STRUCT struct Ability
     id::UInt32
     distance::UInt32
 end

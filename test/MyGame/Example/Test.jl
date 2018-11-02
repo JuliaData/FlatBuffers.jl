@@ -4,7 +4,7 @@
 
 import FlatBuffers
 
-@FlatBuffers.STRUCT struct Test
+FlatBuffers.@STRUCT struct Test
     a::Int16
     b::Int8
 end

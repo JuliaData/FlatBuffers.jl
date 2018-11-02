@@ -4,7 +4,7 @@
 
 import FlatBuffers
 
-@FlatBuffers.STRUCT struct Vec3
+FlatBuffers.@STRUCT struct Vec3
     x::Float32
     y::Float32
     z::Float32
