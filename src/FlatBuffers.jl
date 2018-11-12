@@ -1,9 +1,6 @@
 module FlatBuffers
 
 # utils
-struct UndefinedType end
-const Undefined = UndefinedType()
-
 """
 serialize(stream::IO, value::T) where {T}
 Serialize `value` to `stream` using the `FlatBuffer` format.
@@ -27,7 +24,7 @@ getprevfieldvalue(obj::T, i) where {T} = i == 1 ? missing : getfieldvalue(obj, i
 Scalar
 A Union of the Julia types `T <: Number` that are allowed in FlatBuffers schema
 """
-const Scalar = Union{UndefinedType, Bool,
+const Scalar = Union{Bool,
 Int8, Int16, Int32, Int64,
 UInt8, UInt16, UInt32, UInt64,
 Float32, Float64}
@@ -41,7 +38,6 @@ file_extension(T) = ""
 slot_offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
-default(::Type{UndefinedType}) = Undefined
 default(::Type{T}) where {T <: Scalar} = zero(T)
 default(::Type{T}) where {T <: AbstractString} = nothing
 default(::Type{T}) where {T <: Enum} = enumtype(T)(T(0))
@@ -196,13 +192,6 @@ end
 
 Table(b::Builder{T}) where {T} = Table(T, b.bytes[b.head+1:end], get(b, b.head, Int32))
 
-function untilindex(func, itr)
-	for (i,x) in enumerate(itr)
-		func(x) && return i
-	end
-	return 0
-end
-
 getvalue(t, o, ::Type{Nothing}) = nothing
 getvalue(t, o, ::Type{T}) where {T <: Scalar} = get(t, t.pos + o, T)
 getvalue(t, o, ::Type{T}) where {T <: Enum} = T(get(t, t.pos + o, enumtype(T)))
@@ -242,15 +231,6 @@ function getarray(t, vp, len, ::Type{T}) where {T}
 		return A
 	end
 end
-function getunionarray(t, o, types, ::Type{T}) where {T}
-	A = T(undef, length(types))
-	for i = 1:length(types)
-		newt = Table{T}(t.bytes, t.pos + o + get(t, t.pos + o, Int32))
-		A[i] = FlatBuffers.read(newt, T)
-	end
-	return A
-end
-
 
 function getvalue(t, o, ::Type{Vector{T}}) where {T}
 	vl = vectorlen(t, o)
