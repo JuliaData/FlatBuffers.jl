@@ -132,15 +132,16 @@ function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
 	printstyled(io, "vtable start pos: $(hexoffset(vtabstart))\n", color=:green)
 	printstyled(io, "vtable size: $vtabsize\n", color=:green)
 	i = vtabstart + 4
-	numslots = div(slot_offsets(T)[i] - 4, 2) + 1
+	soff = slot_offsets(T)
+	numslots = div(soff[i] - 4, 2) + 1
 	field = 1
 	slot = 1
 	numfields = length(T.types)
 	while slot <= numslots
 		# leave holes for deprecated fields
 		j = 2
-		start = field == 1 ? slot_offsets(T)[1] : slot_offsets(T)[field - 1]
-		while (start + j) < slot_offsets(T)[field]
+		start = field == 1 ? soff[1] : soff[field - 1]
+		while (start + j) < soff[field]
 			# empty slot
 			stringify(io, buffer, 1, i, i+1, "[deprecated field]", :red)
 			slot += 1
@@ -269,9 +270,10 @@ Will recurse as necessary for nested types (Arrays, Tables, etc.)
 function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
 	args = []
 	numfields = length(T.types)
+	soff = slot_offsets(T)
 	for i = 1:numfields
 		TT = T.types[i]
-		o = offset(t, slot_offsets(T)[i])
+		o = offset(t, soff[i])
 		# if it's a vector of Unions, use the previous field to figure out the types of all the elements
 		if TT <: AbstractVector && isa(eltype(TT), Union)
 			types = typeorder.(eltype(TT), args[end])
@@ -470,11 +472,12 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
 		n = buildvector!(b, arg, length(arg), prev)
 	else
 		numfields = length(T.types)
+		fnames = fieldnames(T)
 		# populate the _type field before unions/vectors of unions
 		kwargs = Dict{Symbol, Any}()
 		for i = 2:numfields
 			field = getfield(arg, i)
-			prevname = fieldnames(T)[i - 1]
+			prevname = fnames[i - 1]
 			# hack to make the example work
 			TT = field isa Vector ? eltype(field) : typeof(field)
 			if :parameters in propertynames(TT) && length(TT.parameters) > 0
@@ -525,15 +528,16 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
 				i -= 1
 				isdefault = getfieldvalue(arg, i) == default(T, i)
 			end
-			numslots = div(slot_offsets(T)[i] - 4, 2) + 1
+			soff = slot_offsets(T)
+			numslots = div(soff[i] - 4, 2) + 1
 			startobject(b, numslots)
 			i = 1
 			field = 1
 			while i <= numslots
 				# leave holes for deprecated fields
 				j = 2
-				start = field == 1 ? slot_offsets(T)[1] : slot_offsets(T)[field - 1]
-				while (start + j) < slot_offsets(T)[field]
+				start = field == 1 ? soff[1] : soff[field - 1]
+				while (start + j) < soff[field]
 					# empty slot
 					i += 1
 					j += 2

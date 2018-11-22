@@ -111,7 +111,7 @@ end
 """
 `endobject` writes data necessary to finish object construction.
 """
-function endobject(b::Builder)
+function endobject(b::Builder{T}) where {T}
 	assertnested(b)
 	n = writevtable!(b)
 	b.nested = false
