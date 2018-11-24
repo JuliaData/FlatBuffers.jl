@@ -263,6 +263,29 @@ function getvalue(t, o, ::Type{T}) where {T}
 	end
 end
 
+function typetoread(prevfield, ::Type{T}, ::Type{V}) where {T <:Any, V <: AbstractVector}
+    # hacks! if it's a union all, assume it's because we're working around circular dependencies
+	if isa(eltype(V), UnionAll)
+        return Vector{T}, false
+    # if it's a vector of Unions, use the previous field to figure out the types of all the elements
+    elseif isa(eltype(V), Union)
+        types = typeorder.(eltype(V), prevfield)
+        R = definestruct(types)
+        return R, true
+    end
+    return V, false
+end
+
+function typetoread(prevfield, ::Type{T}, ::Type{TT}) where {T, TT}
+    # if it's a Union type, use the previous arg to figure out the true type that was serialized
+    if !isunionwithnothing(TT) && TT isa Union
+        R = typeorder(TT, prevfield)
+    else
+        R = TT
+    end
+    R, false
+end
+
 """
 `FlatBuffers.read` parses a `T` at `t.pos` in Table `t`.
 Will recurse as necessary for nested types (Arrays, Tables, etc.)
@@ -274,34 +297,24 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
 	for i = 1:numfields
 		TT = T.types[i]
 		o = offset(t, soff[i])
-		# if it's a vector of Unions, use the previous field to figure out the types of all the elements
-		if TT <: AbstractVector && isa(eltype(TT), Union)
-			types = typeorder.(eltype(TT), args[end])
-			T2 = definestruct(types)
-			eval(:(newt = getvalue($t, $o, $T2)))
-			eval(:(n = length($T2.types)))
-			push!(args, [getfieldvalue(newt, j) for j = 1:n])
-		else
-			# hacks! if it's a union all, assume it's because we're working around circular dependencies
-			if TT <: AbstractVector && isa(eltype(TT), UnionAll)
-				TT = Vector{T}
-			end
-			# if it's a Union type, use the previous arg to figure out the true type that was serialized
-			# except in the special case of a union with Nothing and a concrete type
-			nullable = false
-			if isunionwithnothing(TT)
-				TT = TT.b
-				nullable = true
-			elseif TT isa Union
-				TT = typeorder(TT, args[end])
-			end
-			if o == 0
-				push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
-			else
-				push!(args, getvalue(t, o, TT))
-			end
-		end
-	end
+        R, isunionvector = typetoread(i == 1 ? nothing : args[end], T, TT)
+        nullable = false
+        if isunionwithnothing(R)
+            nullable = true
+            R = R.b
+        end
+        if o == 0
+            push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
+        else
+            if isunionvector
+                eval(:(newr = getvalue($t, $o, $R)))
+                eval(:(n = length($R.types)))
+                push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
+            else
+                push!(args, getvalue(t, o, R))
+            end
+        end
+    end
 
 	return T(args...)
 end

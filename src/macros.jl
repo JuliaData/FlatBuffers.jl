@@ -202,7 +202,7 @@ function createdefaultfns(typedef::Expr)
 		value = p.args[end]
 		ifblock = get(kwdict, t, quote end)
 		push!(ifblock.args, :(if sym == $(QuoteNode(name))
-			return $t($value)
+			return convert($t, $value)
 		end))
 		kwdict[t] = ifblock
 	end
