@@ -466,33 +466,49 @@ function putslot!(b, i, arg::T, off, default, prev) where {T}
 	end
 end
 
+function needreconstruct(T)
+	for TT in T.types 
+        if TT <: Vector && eltype(TT) isa Union && !(eltype(TT) isa UnionAll)
+            return true
+        elseif TT isa Union && !isunionwithnothing(TT)
+            return true
+        end
+	end
+    return false	
+end
+
+function reconstructkwargs(arg::T) where {T}
+    kwargs = Dict{Symbol, Any}()
+    numfields = length(T.types)
+    fnames = fieldnames(T)
+    for i = 2:numfields
+        field = getfield(arg, i)
+        prevname = fnames[i - 1]
+        # hack to make the example work
+        TT = field isa Vector ? eltype(field) : typeof(field)
+        if :parameters in propertynames(TT) && length(TT.parameters) > 0
+            TT = TT.name.wrapper
+        end
+        if field isa Vector && eltype(field) isa Union && !(eltype(field) isa UnionAll)
+            kwargs[prevname] = [FlatBuffers.typeorder(TT, typeof(x)) for x in field]
+        elseif (T.types[i] isa Union && !isunionwithnothing(T.types[i]))
+            kwargs[prevname] = FlatBuffers.typeorder(T.types[i], TT)
+        end
+    end
+    return kwargs
+end
+
 function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
 	if T <: Array
 		# array of things
 		n = buildvector!(b, arg, length(arg), prev)
 	else
-		numfields = length(T.types)
-		fnames = fieldnames(T)
 		# populate the _type field before unions/vectors of unions
-		kwargs = Dict{Symbol, Any}()
-		for i = 2:numfields
-			field = getfield(arg, i)
-			prevname = fnames[i - 1]
-			# hack to make the example work
-			TT = field isa Vector ? eltype(field) : typeof(field)
-			if :parameters in propertynames(TT) && length(TT.parameters) > 0
-				TT = TT.name.wrapper
-			end
-			if field isa Vector && eltype(field) isa Union && !(eltype(field) isa UnionAll)
-				kwargs[prevname] = [FlatBuffers.typeorder(TT, typeof(x)) for x in field]
-			elseif (T.types[i] isa Union && !isunionwithnothing(T.types[i]))
-				kwargs[prevname] = FlatBuffers.typeorder(T.types[i], TT)
-			end
-		end
-		if !isempty(kwargs)
-			# reconstruct it so the types before the fields
-			# are populated correctly
-			arg = Parameters.reconstruct(arg; kwargs...)
+        if needreconstruct(T)
+		   # reconstruct it so the types before the fields
+		   # are populated correctly
+           kwargs = reconstructkwargs(arg)
+		   arg = Parameters.reconstruct(arg; kwargs...)
 		end
 		if isstruct(T)
 			# build a struct type with provided `arg`

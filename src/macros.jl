@@ -195,16 +195,16 @@ function createdefaultfns(typedef::Expr)
 	kwdict = Dict{Any, Any}()
 	for p in params.args
 	name = p.args[1]
-	type = getkwtype(defs, name)
-		if type == nothing
+	t = getkwtype(defs, name)
+		if t == nothing
 			continue
 		end
 		value = p.args[end]
-		ifblock = get(kwdict, type, quote end)
+		ifblock = get(kwdict, t, quote end)
 		push!(ifblock.args, :(if sym == $(QuoteNode(name))
-			return $type($value)
+			return $t($value)
 		end))
-		kwdict[type] = ifblock
+		kwdict[t] = ifblock
 	end
 
 	[:(function FlatBuffers.default(::Type{$T}, ::Type{$TT}, sym) where {$(typevars...)}
