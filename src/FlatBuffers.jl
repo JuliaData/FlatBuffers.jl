@@ -133,7 +133,7 @@ function showvtable(io::IO, T, buffer, vtabstart, vtabsize)
 	printstyled(io, "vtable size: $vtabsize\n", color=:green)
 	i = vtabstart + 4
 	soff = slot_offsets(T)
-	numslots = div(soff[i] - 4, 2) + 1
+    numslots = div(soff[end] - 4, 2) + 1
 	field = 1
 	slot = 1
 	numfields = length(T.types)
