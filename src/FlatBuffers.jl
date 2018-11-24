@@ -511,82 +511,82 @@ function reconstructkwargs(arg::T) where {T}
     return kwargs
 end
 
-function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1, T}
-	if T <: Array
-		# array of things
-		n = buildvector!(b, arg, length(arg), prev)
-	else
-		# populate the _type field before unions/vectors of unions
-        if needreconstruct(T)
-		   # reconstruct it so the types before the fields
-		   # are populated correctly
-           kwargs = reconstructkwargs(arg)
-		   arg = Parameters.reconstruct(arg; kwargs...)
-		end
-		if isstruct(T)
-			# build a struct type with provided `arg`
-			all(isstruct, T.types) || throw(ArgumentError("can't seralize flatbuffer, $T is not a pure struct"))
-			align = alignment(T)
-			prep!(b, align, 2align)
-			for i = length(T.types):-1:1
-				typ = T.types[i]
-				if typ <: Enum
-					prepend!(b, enumtype(typ)(getfield(arg,i)))
-				elseif isbitstype(typ)
-					prepend!(b, getfield(arg,i))
-				else
-					buildbuffer!(b, getfield(arg, i), getprevfieldvalue(arg, i))
-				end
-			end
-			n = offset(b)
-		else
-			# build a table type
-			# check for string/array/table types
-			numfields = length(T.types)
-			os = Int[]
-			isdefault = falses(numfields)
-			for i = 1:numfields
-				push!(os, getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)))
-			end
-			# all nested have been written, with offsets in `os[]`
-			# don't use slots for the last N members if they are all default
-			# also leave slots for deprecated fields
-			i = numfields
-			isdefault = getfieldvalue(arg, i) == default(T, i)
-			while isdefault && i > 0
-				i -= 1
-				isdefault = getfieldvalue(arg, i) == default(T, i)
-			end
-			soff = slot_offsets(T)
-			numslots = div(soff[i] - 4, 2) + 1
-			startobject(b, numslots)
-			i = 1
-			field = 1
-			while i <= numslots
-				# leave holes for deprecated fields
-				j = 2
-				start = field == 1 ? soff[1] : soff[field - 1]
-				while (start + j) < soff[field]
-					# empty slot
-					i += 1
-					j += 2
-				end
-				val = getfieldvalue(arg, field)
-				d = default(T, field)
-				if !(isunionwithnothing(T.types[field]) && val == nothing)
-					putslot!(b, i,
-						val,
-						os[field],
-						d,
-						getprevfieldvalue(arg, field)
-						)
-				end
-				field += 1
-				i += 1
-			end
-			n = endobject(b)
-		end
-	end
+function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:Array}
+    # array of things
+    buildvector!(b, arg, length(arg), prev)
+end
+
+function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:Any}
+    # populate the _type field before unions/vectors of unions
+    if needreconstruct(T)
+        # reconstruct it so the types before the fields
+        # are populated correctly
+        kwargs = reconstructkwargs(arg)
+        arg = Parameters.reconstruct(arg; kwargs...)
+    end
+    if isstruct(T)
+    # build a struct type with provided `arg`
+        all(isstruct, T.types) || throw(ArgumentError("can't seralize flatbuffer, $T is not a pure struct"))
+        align = alignment(T)
+        prep!(b, align, 2align)
+        for i = length(T.types):-1:1
+            typ = T.types[i]
+            if typ <: Enum
+                prepend!(b, enumtype(typ)(getfield(arg,i)))
+            elseif isbitstype(typ)
+                prepend!(b, getfield(arg,i))
+            else
+                buildbuffer!(b, getfield(arg, i), getprevfieldvalue(arg, i))
+            end
+        end
+        n = offset(b)
+    else
+        # build a table type
+        # check for string/array/table types
+        numfields = length(T.types)
+        os = Int[]
+        isdefault = falses(numfields)
+        for i = 1:numfields
+            push!(os, getoffset(b, getfieldvalue(arg, i), getprevfieldvalue(arg, i)))
+        end
+        # all nested have been written, with offsets in `os[]`
+        # don't use slots for the last N members if they are all default
+        # also leave slots for deprecated fields
+        i = numfields
+        isdefault = getfieldvalue(arg, i) == default(T, i)
+        while isdefault && i > 0
+            i -= 1
+            isdefault = getfieldvalue(arg, i) == default(T, i)
+        end
+        soff = slot_offsets(T)
+        numslots = div(soff[i] - 4, 2) + 1
+        startobject(b, numslots)
+        i = 1
+        field = 1
+        while i <= numslots
+            # leave holes for deprecated fields
+            j = 2
+            start = field == 1 ? soff[1] : soff[field - 1]
+            while (start + j) < soff[field]
+                # empty slot
+                i += 1
+                j += 2
+            end
+            val = getfieldvalue(arg, field)
+            d = default(T, field)
+            if !(isunionwithnothing(T.types[field]) && val == nothing)
+                putslot!(b, i,
+                    val,
+                    os[field],
+                    d,
+                    getprevfieldvalue(arg, field)
+                    )
+            end
+            field += 1
+            i += 1
+        end
+        n = endobject(b)
+    end
 	return n
 end
 
