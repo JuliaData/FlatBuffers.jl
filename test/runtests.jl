@@ -273,7 +273,7 @@ end
 	c::Int16
 	d::Int32
 end
-@test sizeof(G) == 20
+@test sizeof(G) == 24
 @test all(fieldnames(G) .== [:a, :b, :_pad_b_G_0, :c, :_pad_c_G_1, :d])
 @test G(1,2,3,4) == G(1,2,3,4)
 
@@ -308,6 +308,6 @@ end
 	b::I
 	c::J
 end
-@test sizeof(K) == 44
+@test sizeof(K) == 48
 @test all(fieldnames(K) .== [:a_a, :a__pad_a_J_0, :a__pad__pad_a_J_0_J_0, :a__pad_a_J_1, :a__pad__pad_a_J_1_J_1, :a_b_a, :b_a, :b_b, :b__pad_b_I_0, :b__pad__pad_b_I_0_I_0, :b__pad_b_I_1, :b__pad__pad_b_I_1_I_1, :b_c, :c_a, :c__pad_a_J_0, :c__pad__pad_a_J_0_J_0, :c__pad_a_J_1, :c__pad__pad_a_J_1_J_1, :c_b_a])
 @test K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7))) == K(J(1,A(2)), I(3.0, 4, 5), J(6, A(7)))
