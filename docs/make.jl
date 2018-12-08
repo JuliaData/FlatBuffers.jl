@@ -11,6 +11,5 @@ deploydocs(
     repo = "github.com/JuliaData/FlatBuffers.jl.git",
     target = "build",
     deps = nothing,
-    make = nothing,
-    osname = "linux"
+    make = nothing
 )
