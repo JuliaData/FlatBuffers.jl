@@ -17,6 +17,8 @@ function deserialize(stream::IO, ::Type{T}) where {T}
 	read(T, read(stream))
 end
 
+struct UndefinedType end
+const Undefined = UndefinedType()
 getfieldvalue(obj::T, i) where {T} = isdefined(obj, i) ? getfield(obj, i) : Undefined
 getprevfieldvalue(obj::T, i) where {T} = i == 1 ? missing : getfieldvalue(obj, i - 1)
 
@@ -544,6 +546,11 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:A
         # build a table type
         # check for string/array/table types
         numfields = length(T.types)
+        # early exit for empty objects
+        if numfields == 0
+            startobject(b, 0)
+            return endobject(b)
+        end
         os = Int[]
         isdefault = falses(numfields)
         for i = 1:numfields
