@@ -17,6 +17,8 @@ function deserialize(stream::IO, ::Type{T}) where {T}
 	read(T, read(stream))
 end
 
+struct UndefinedType end
+const Undefined = UndefinedType()
 getfieldvalue(obj::T, i) where {T} = isdefined(obj, i) ? getfield(obj, i) : Undefined
 getprevfieldvalue(obj::T, i) where {T} = i == 1 ? missing : getfieldvalue(obj, i - 1)
 
@@ -263,27 +265,31 @@ function getvalue(t, o, ::Type{T}) where {T}
 	end
 end
 
-function typetoread(prevfield, ::Type{T}, ::Type{V}) where {T <:Any, V <: AbstractVector}
-    # hacks! if it's a union all, assume it's because we're working around circular dependencies
-	if isa(eltype(V), UnionAll)
-        return Vector{T}, false
-    # if it's a vector of Unions, use the previous field to figure out the types of all the elements
-    elseif isa(eltype(V), Union)
-        types = typeorder.(eltype(V), prevfield)
-        R = definestruct(types)
-        return R, true
-    end
-    return V, false
-end
-
 function typetoread(prevfield, ::Type{T}, ::Type{TT}) where {T, TT}
-    # if it's a Union type, use the previous arg to figure out the true type that was serialized
-    if !isunionwithnothing(TT) && TT isa Union
-        R = typeorder(TT, prevfield)
-    else
-        R = TT
+    R = TT
+    nullable = false
+    if isunionwithnothing(R)
+        nullable = true
+        R = TT.b
     end
-    R, false
+
+    # if it's a Union type, use the previous arg to figure out the true type that was serialized
+    if !isunionwithnothing(R) && R isa Union
+        R = typeorder(R, prevfield)
+    end
+
+    if R <: AbstractVector
+        # hacks! if it's a union all, assume it's because we're working around circular dependencies
+        if isa(eltype(R), UnionAll)
+            return Vector{T}, false, nullable
+        # if it's a vector of Unions, use the previous field to figure out the types of all the elements
+        elseif isa(eltype(R), Union)
+            types = typeorder.(eltype(R), prevfield)
+            R = definestruct(types)
+            return R, true, nullable
+        end
+    end
+    return R, false, nullable
 end
 
 """
@@ -297,12 +303,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
 	for i = 1:numfields
 		TT = T.types[i]
 		o = offset(t, soff[i])
-        R, isunionvector = typetoread(i == 1 ? nothing : args[end], T, TT)
-        nullable = false
-        if isunionwithnothing(R)
-            nullable = true
-            R = R.b
-        end
+        R, isunionvector, nullable = typetoread(i == 1 ? nothing : args[end], T, TT)
         if o == 0
             push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
         else
@@ -544,6 +545,11 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:A
         # build a table type
         # check for string/array/table types
         numfields = length(T.types)
+        # early exit for empty objects
+        if numfields == 0
+            startobject(b, 0)
+            return endobject(b)
+        end
         os = Int[]
         isdefault = falses(numfields)
         for i = 1:numfields
