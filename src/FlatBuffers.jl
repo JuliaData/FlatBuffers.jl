@@ -41,9 +41,9 @@ slot_offsets(T) = [4 + ((i - 1) * 2) for i = 1:length(T.types)]
 
 default(T, TT, sym) = default(TT)
 default(::Type{T}) where {T <: Scalar} = zero(T)
-default(::Type{T}) where {T <: AbstractString} = nothing
+default(::Type{T}) where {T <: AbstractString} = ""
 default(::Type{T}) where {T <: Enum} = enumtype(T)(T(0))
-default(::Type{Vector{T}}) where {T} = nothing
+default(::Type{Vector{T}}) where {T} = T[]
 
 # attempt to call default constructors for the type,
 # use above methods as fallback

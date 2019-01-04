@@ -48,7 +48,7 @@ function checkmonster(monster)
     @test sum([test0.a, test0.b, test1.a, test1.b]) == 100
 
     @test monster.testarrayofstring == ["test1", "test2"]
-    @test monster.testarrayoftables == nothing
+    @test monster.testarrayoftables == []
     @test monster.testf == 3.14159f0
 end
 
