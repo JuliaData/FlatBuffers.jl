@@ -4,7 +4,7 @@ Core.eval(MyGame.Example, quote
 
 import ..InParentNamespace
 
-FlatBuffers.@with_kw mutable struct Monster
+FlatBuffers.@with_kw mutable struct Monster{T}
 #=
 #  an example documentation comment: monster object
 =#
@@ -15,15 +15,15 @@ FlatBuffers.@with_kw mutable struct Monster
     inventory::Vector{UInt8} = []
     color::Color = 8
     test_type::UInt8 = 0
-    test::Any_ = nothing
+    test::T = nothing
     test4::Vector{Test} = []
     testarrayofstring::Vector{String} = []
 #=
 #  an example documentation comment: this will end up in the generated code
 #  multiline too
 =#
-    testarrayoftables::Vector{Monster} = []
-    enemy::Union{Monster, Nothing} = nothing
+    testarrayoftables::Vector{Monster{T}} = []
+    enemy::Union{Monster{T}, Nothing} = nothing
     testnestedflatbuffer::Vector{UInt8} = []
     testempty::Union{Stat, Nothing} = nothing
     testbool::Bool = false
@@ -54,10 +54,10 @@ FlatBuffers.@with_kw mutable struct Monster
     vector_of_co_owning_references::Vector{UInt64} = []
     non_owning_reference::UInt64 = 0
     vector_of_non_owning_references::Vector{UInt64} = []
-    any_unique_type::UInt8 = 0
-    any_unique::AnyUniqueAliases = nothing
-    any_ambiguous_type::UInt8 = 0
-    any_ambiguous::AnyAmbiguousAliases = nothing
+    #= any_unique_type::UInt8 = 0 =#
+    #= any_unique::AnyUniqueAliases = nothing =#
+    #= any_ambiguous_type::UInt8 = 0 =#
+    #= any_ambiguous::AnyAmbiguousAliases = nothing =#
     vector_of_enums::Vector{Color} = []
 end
 FlatBuffers.@ALIGN(Monster, 1)

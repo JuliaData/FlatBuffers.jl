@@ -2,7 +2,7 @@ using Test
 import FlatBuffers
 
 # generated code
-include("MyGame/MyGame.jl")
+include("monster_test_generated.jl")
 import .MyGame
 import .MyGame.Example
 import .MyGame.Example2
