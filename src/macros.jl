@@ -158,7 +158,7 @@ import Parameters
 function getdef(typedef::Expr)
 	isstructexpr(x) = x isa Expr && x.head == :struct
 	i = findfirst(x -> x isa Expr && any(isstructexpr.(x.args)), typedef.args)
-	if isnothing(i)
+	if i == nothing
 		throw(ArgumentError("malformed @with_kw expression"))
 	end
 	wrapper = typedef.args[i]
