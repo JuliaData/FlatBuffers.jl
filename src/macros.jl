@@ -155,17 +155,24 @@ end
 
 import Parameters
 
-# TODO: this is so evil and will fall over in the slightest breeze.
 function getdef(typedef::Expr)
-	typedef.args[end-16].args[end].args[end]
+	isstructexpr(x) = x isa Expr && x.head == :struct
+	i = findfirst(x -> x isa Expr && any(isstructexpr.(x.args)), typedef.args)
+	if isnothing(i)
+		throw(ArgumentError("malformed @with_kw expression"))
+	end
+	wrapper = typedef.args[i]
+	i = findfirst(isstructexpr, wrapper.args)
+	def = wrapper.args[i]
+	return def
 end
 
 function getfielddefs(typedef::Expr)
-	[a for a in getdef(typedef).args[1:end-2] if a isa Expr]
+	[a for a in getdef(typedef).args[end].args if a isa Expr && a.head == :(::)]
 end
 
 function getconstructor(typedef::Expr)
-	cons = getdef(typedef).args[end-1].args[1]
+	cons = getdef(typedef).args[end].args[end-1].args[1]
 	typevars = []
 	if :head in propertynames(cons) && cons.head == :where
 		typevars = cons.args[2:end]
@@ -194,8 +201,8 @@ function createdefaultfns(typedef::Expr)
 	defs = getfielddefs(typedef)
 	kwdict = Dict{Any, Any}()
 	for p in params.args
-	name = p.args[1]
-	t = getkwtype(defs, name)
+		name = p.args[1]
+		t = getkwtype(defs, name)
 		if t == nothing
 			continue
 		end
