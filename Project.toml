@@ -1,5 +1,5 @@
 name = "FlatBuffers"
-uuid = "6a5b833c-db2f-11e8-18d6-cf74c1981d29"
+uuid = "53afe959-3a16-52fa-a8da-cf864710bae9"
 version = "0.5.4"
 
 [deps]
