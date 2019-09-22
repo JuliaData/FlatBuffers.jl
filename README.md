@@ -4,9 +4,9 @@
 *A Julia implementation of google flatbuffers*
 
 
-| **Documentation**                                                               | **PackageEvaluator**                                            | **Build Status**                                                                                |
-|:-------------------------------------------------------------------------------:|:---------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][pkg-0.6-img]][pkg-0.6-url] [![][pkg-0.7-img]][pkg-0.7-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
+| **Documentation**                                                               | **Build Status**                                                                                
+|:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
+| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
 
 
 ## Installation
@@ -24,7 +24,7 @@ julia> Pkg.add("FlatBuffers")
 
 ## Project Status
 
-The package is tested against Julia `1.0`, `1.1`, and nightly on Linux, OS X, and Windows.
+The package is tested against Julia `1.0`, `1.1`, `1.2`, `1.3`, and nightly on Linux, OS X, and Windows.
 
 ## Contributing and Questions
 
