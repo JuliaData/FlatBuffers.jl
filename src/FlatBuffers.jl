@@ -310,7 +310,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             if isunionvector
                 eval(:(newr = getvalue($t, $o, $R)))
                 eval(:(n = length($R.types)))
-                push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
+                push!(args, [getfieldvalue(newr, j) for j = 1:n])
             else
                 push!(args, getvalue(t, o, R))
             end
@@ -481,14 +481,14 @@ function putslot!(b, i, arg::T, off, default, prev) where {T}
 end
 
 function needreconstruct(T)
-	for TT in T.types 
+	for TT in T.types
         if TT <: Vector && eltype(TT) isa Union && !(eltype(TT) isa UnionAll)
             return true
         elseif TT isa Union && !isunionwithnothing(TT)
             return true
         end
 	end
-    return false	
+    return false
 end
 
 function reconstructkwargs(arg::T) where {T}
@@ -560,7 +560,7 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:A
         # also leave slots for deprecated fields
         i = numfields
         isdefault = getfieldvalue(arg, i) == default(T, i)
-        while isdefault && i > 0
+        while isdefault && i > 1
             i -= 1
             isdefault = getfieldvalue(arg, i) == default(T, i)
         end
