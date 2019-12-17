@@ -1,10 +1,10 @@
 import Pkg
 Pkg.instantiate()
-using Documenter, FlatBuffers
+using Documenter, DocumenterMarkdown, FlatBuffers
 
 makedocs(
     modules = [FlatBuffers],
-    format = :html,
+    format = Documenter.HTML(),
     sitename = "FlatBuffers.jl",
     pages = ["Home" => "index.md"]
 )
