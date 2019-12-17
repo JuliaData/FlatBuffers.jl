@@ -55,7 +55,9 @@ val = Example.SimpleType(2)
 open("example.bin", "w") do f FlatBuffers.serialize(f, val) end
 
 # read the value back again from file
-val2 = open("example.bin", "r") do f Example.SimpleType(f) end
+val2 = open("example.bin", "r") do f
+  FlatBuffers.deserialize(f, Example.SimpleType)
+end
 ```
 In addition, this package provides the following types and methods, which are useful
 when inspecting and constructing flatbuffers:
