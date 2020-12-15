@@ -5,4 +5,5 @@
 /deps/usr
 CMakeLists.txt.user
 docs/build/**
+docs/Manifest.toml
 *~

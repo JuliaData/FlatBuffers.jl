@@ -1,17 +1,16 @@
-import Pkg
-Pkg.instantiate()
-using Documenter, DocumenterMarkdown, FlatBuffers
+using Documenter, FlatBuffers
 
-makedocs(
-    modules = [FlatBuffers],
-    format = Documenter.HTML(),
-    sitename = "FlatBuffers.jl",
-    pages = ["Home" => "index.md"]
+makedocs(;
+    modules=[FlatBuffers],
+    format=Documenter.HTML(),
+    pages=[
+        "Home" => "index.md",
+    ],
+    repo="https://github.com/JuliaData/FlatBuffers.jl/blob/{commit}{path}#L{line}",
+    sitename="FlatBuffers.jl",
+    assets=String[],
 )
 
-deploydocs(
-    repo = "github.com/JuliaData/FlatBuffers.jl.git",
-    target = "build",
-    deps = nothing,
-    make = nothing
+deploydocs(;
+    repo="github.com/JuliaData/FlatBuffers.jl",
 )
