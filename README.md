@@ -3,7 +3,6 @@
 
 [![CI](https://github.com/JuliaData/FlatBuffers.jl/workflows/CI/badge.svg)](https://github.com/JuliaData/FlatBuffers.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/JuliaData/FlatBuffers.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaData/FlatBuffers.jl)
-[![deps](https://juliahub.com/docs/FlatBuffers/deps.svg)](https://juliahub.com/ui/Packages/FlatBuffers/yjnue?t=2)
 [![deps](https://juliahub.com/docs/FlatBuffers/deps.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK?t=2)
 [![version](https://juliahub.com/docs/FlatBuffers/version.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK)
 [![pkgeval](https://juliahub.com/docs/FlatBuffers/pkgeval.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK)
