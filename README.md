@@ -1,20 +1,21 @@
 
 # FlatBuffers
 
+[![CI](https://github.com/JuliaData/FlatBuffers.jl/workflows/CI/badge.svg)](https://github.com/JuliaData/FlatBuffers.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JuliaData/FlatBuffers.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaData/FlatBuffers.jl)
+[![deps](https://juliahub.com/docs/FlatBuffers/deps.svg)](https://juliahub.com/ui/Packages/FlatBuffers/yjnue?t=2)
+[![deps](https://juliahub.com/docs/FlatBuffers/deps.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK?t=2)
+[![version](https://juliahub.com/docs/FlatBuffers/version.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK)
+[![pkgeval](https://juliahub.com/docs/FlatBuffers/pkgeval.svg)](https://juliahub.com/ui/Packages/FlatBuffers/rNtRK)
+
 *A Julia implementation of google flatbuffers*
-
-
-| **Documentation**                                                               | **Build Status**                                                                                
-|:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
-
 
 ## Installation
 
-The package is registered in `METADATA.jl` and so can be installed with `Pkg.add`.
+The package is registered in General registery and so can be installed with `Pkg.add`.
 
 ```julia
-julia> Pkg.add("FlatBuffers")
+julia> using Pkg; Pkg.add("FlatBuffers")
 ```
 
 ## Documentation
@@ -24,7 +25,7 @@ julia> Pkg.add("FlatBuffers")
 
 ## Project Status
 
-The package is tested against Julia `1.0`, `1.1`, `1.2`, `1.3`, and nightly on Linux, OS X, and Windows.
+The package is tested against Julia `1.0`, `1.1`, `1.2`, `1.3`, and nightly on Linux and Windows.
 
 ## Contributing and Questions
 
@@ -39,18 +40,5 @@ Contributions are very welcome, as are feature requests and suggestions. Please 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://JuliaData.github.io/FlatBuffers.jl/stable
 
-[travis-img]: https://travis-ci.org/JuliaData/FlatBuffers.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/JuliaData/FlatBuffers.jl
-
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/h227adt6ovd1u3sx/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/JuliaData/documenter-jl/branch/master
-
-[codecov-img]: https://codecov.io/gh/JuliaData/FlatBuffers.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/JuliaData/FlatBuffers.jl
 
 [issues-url]: https://github.com/JuliaData/FlatBuffers.jl/issues
-
-[pkg-0.6-img]: https://pkg.julialang.org/badges/FlatBuffers_0.6.svg
-[pkg-0.6-url]: https://pkg.julialang.org/?pkg=FlatBuffers
-[pkg-0.7-img]: https://pkg.julialang.org/badges/FlatBuffers_0.7.svg
-[pkg-0.7-url]: https://pkg.julialang.org/?pkg=FlatBuffers
