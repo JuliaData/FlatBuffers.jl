@@ -24,7 +24,7 @@ julia> using Pkg; Pkg.add("FlatBuffers")
 
 ## Project Status
 
-The package is tested against Julia `1.0`, `1.1`, `1.2`, `1.3`, and nightly on Linux and Windows.
+The package is tested against Julia `1.0`, latest `1.X` minor release, and nightly on Linux and Windows.
 
 ## Contributing and Questions
 
