@@ -31,7 +31,7 @@ Int8, Int16, Int32, Int64,
 UInt8, UInt16, UInt32, UInt64,
 Float32, Float64}
 
-isstruct(T) = isconcretetype(T) && !T.mutable
+isstruct(T) = isconcretetype(T) && !ismutabletype(T)
 isbitstype(T) = fieldcount(T) == 0
 isunionwithnothing(T) = T isa Union && T.a == Nothing && !(isa(T.b, Union))
 
