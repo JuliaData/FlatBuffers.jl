@@ -6,4 +6,7 @@
 CMakeLists.txt.user
 docs/build/**
 docs/Manifest.toml
+*_generated.jl
 *~
+scratch/*
+Manifest.toml
