@@ -34,8 +34,7 @@ end
 	codegendir = "monster/__codegen/"
 	if "FLATC" ∈ keys(ENV)
 		mkpath(codegendir)
-		flatc = ENV["FLATC"]
-
+		flatc = ENV["FLATC"] # path to flatc executable based on https://github.com/jonalm/flatbuffers
 		run(`$flatc -o $codegendir --julia monster/monster.fbs`)
 		include(joinpath(codegendir, "monster_generated.jl"))
 	
