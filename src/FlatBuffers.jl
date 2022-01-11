@@ -565,7 +565,7 @@ function buildbuffer!(b::Builder{T1}, arg::T, prev=nothing) where {T1<:Any, T<:A
         # also leave slots for deprecated fields
         i = numfields
         isdefault = getfieldvalue(arg, i) == default(T, i)
-        while isdefault && i > 0
+        while isdefault && i > 1
             i -= 1
             isdefault = getfieldvalue(arg, i) == default(T, i)
         end
