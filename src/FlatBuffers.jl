@@ -313,8 +313,8 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
         else
             if isunionvector
-                eval(:(newr = getvalue($t, $o, $R)))
-                eval(:(n = length($R.types)))
+                newr = getvalue(eval(t), eval(o), eval(R))
+                n = length(eval(R)).types
                 push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
             else
                 push!(args, getvalue(t, o, R))
@@ -422,7 +422,7 @@ end
 # and populate them with values from the vector
 function createstruct(types::Vector{DataType}, A::Vector{T}) where {T}
 	T1 = definestruct(types)
-	eval(:(newt = $T1($(A...))))
+	newt = eval(T1)(A...)
 	return newt
 end
 
