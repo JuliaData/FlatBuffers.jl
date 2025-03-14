@@ -313,8 +313,9 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
         else
             if isunionvector
-                newr = getvalue(eval(t), eval(o), eval(R))
-                n = length(eval(R)).types
+                R = eval(R)
+                newr = getvalue(t, o, R)
+                n = length(R.types)
                 push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
             else
                 push!(args, getvalue(t, o, R))
