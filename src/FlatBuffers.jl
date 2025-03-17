@@ -313,8 +313,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
             push!(args, nullable ? nothing : default(T, TT, T.name.names[i]))
         else
             if isunionvector
-                R = eval(R)
-                newr = Base.invokelatest(getvalue, t, o, R)
+                newr = getvalue(t, o, R)
                 n = length(R.types)
                 push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
             else
@@ -411,20 +410,14 @@ end
 
 # make a new struct which has fields of the given type
 function definestruct(types::Vector{DataType})
-	fields = [:($(gensym())::$(TT)) for TT in types]
-	T1 = gensym()
-	eval(:(mutable struct $T1
-		$(fields...)
-	end))
-	return T1
+	names = [Symbol(:_, i) for i in 1:length(types)]
+	return NamedTuple{tuple(names...), Tuple{types...}}
 end
 
 # make a new struct which has fields of the given type
 # and populate them with values from the vector
 function createstruct(types::Vector{DataType}, A::Vector{T}) where {T}
-	T1 = definestruct(types)
-	newt = Base.invokelatest(eval(T1), A...)
-	return newt
+	return T1(A...)
 end
 
 # struct or table/object vector
