@@ -314,7 +314,7 @@ function FlatBuffers.read(t::Table{T1}, ::Type{T}=T1) where {T1, T}
         else
             if isunionvector
                 R = eval(R)
-                newr = invokelatest(getvalue, t, o, R)
+                newr = Base.invokelatest(getvalue, t, o, R)
                 n = length(R.types)
                 push!(args, [getfieldvalue(newr, j) for j = 1:n]) 
             else
@@ -423,7 +423,7 @@ end
 # and populate them with values from the vector
 function createstruct(types::Vector{DataType}, A::Vector{T}) where {T}
 	T1 = definestruct(types)
-	newt = invokelatest(eval(T1), A...)
+	newt = Base.invokelatest(eval(T1), A...)
 	return newt
 end
 
