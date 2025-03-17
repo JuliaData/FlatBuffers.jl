@@ -259,7 +259,7 @@ function getvalue(t, o, ::Type{T}) where {T}
 				push!(args, val)
 				o += sizeof(typ <: Enum ? enumtype(typ) : typ)
 			end
-			return T(args)
+			return T <: NamedTuple ? T(args) : T(args...)
 		else
 			return unsafe_load(convert(Ptr{T}, pointer(view(t.bytes, (t.pos + o + 1):length(t.bytes)))))
 		end
