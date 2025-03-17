@@ -259,7 +259,7 @@ function getvalue(t, o, ::Type{T}) where {T}
 				push!(args, val)
 				o += sizeof(typ <: Enum ? enumtype(typ) : typ)
 			end
-			return T(args...)
+			return T(args)
 		else
 			return unsafe_load(convert(Ptr{T}, pointer(view(t.bytes, (t.pos + o + 1):length(t.bytes)))))
 		end
@@ -417,7 +417,7 @@ end
 # make a new struct which has fields of the given type
 # and populate them with values from the vector
 function createstruct(types::Vector{DataType}, A::Vector{T}) where {T}
-	return T1(A...)
+	return definestruct(types)(A)
 end
 
 # struct or table/object vector
