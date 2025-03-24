@@ -6,11 +6,12 @@ makedocs(;
     pages=[
         "Home" => "index.md",
     ],
-    repo="https://github.com/JuliaData/FlatBuffers.jl/blob/{commit}{path}#L{line}",
+    repo=GitHub("JuliaData", "FlatBuffers.jl"),
     sitename="FlatBuffers.jl",
 )
 
 deploydocs(;
     repo="github.com/JuliaData/FlatBuffers.jl",
-    devbranch = "main"
+    devbranch = "main",
+    push_preview = true
 )
