@@ -6,7 +6,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
     ],
-    repo=GitHub("JuliaData", "FlatBuffers.jl"),
+    repo=Documenter.Remotes.GitHub("JuliaData", "FlatBuffers.jl"),
     sitename="FlatBuffers.jl",
 )
 
