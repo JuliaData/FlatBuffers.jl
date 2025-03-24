@@ -12,6 +12,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/JuliaData/FlatBuffers.jl",
-    devbranch = "main",
-    push_preview = true
+    devbranch = "main"
 )
