@@ -8,7 +8,6 @@ makedocs(;
     ],
     repo="https://github.com/JuliaData/FlatBuffers.jl/blob/{commit}{path}#L{line}",
     sitename="FlatBuffers.jl",
-    assets=String[],
 )
 
 deploydocs(;
