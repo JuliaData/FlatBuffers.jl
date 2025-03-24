@@ -6,9 +6,8 @@ makedocs(;
     pages=[
         "Home" => "index.md",
     ],
-    repo="https://github.com/JuliaData/FlatBuffers.jl/blob/{commit}{path}#L{line}",
+    repo=Documenter.Remotes.GitHub("JuliaData", "FlatBuffers.jl"),
     sitename="FlatBuffers.jl",
-    assets=String[],
 )
 
 deploydocs(;

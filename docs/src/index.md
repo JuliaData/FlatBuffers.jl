@@ -86,3 +86,15 @@ internal methods and may be queried using `?` at the REPL.
 * `@UNION T Union{T1,T2,...}` - convenience macro for defining a flatbuffer union type `T`
 * `@STRUCT struct T fields... end` - convenience macro for defining flatbuffer struct types, ensuring any necessary padding gets added to the type definition
 
+## API
+
+```@autodocs
+Modules = [FlatBuffers]
+```
+
+### Base extensions
+
+```@doc
+Base.read
+Base.prepend!
+```
